@@ -1,0 +1,23 @@
+#! /usr/bin/env zsh
+
+# Description:
+#   A script to extract and download the audio of videos from
+#   youtube (mainly) and other video streaming sites which
+#   support youtube-dl
+
+
+. `dirname ${0}`/src/includes/functions/assert_argument_count.zsh
+
+
+assert_argument_count equal 1 ${#} "Usage: `basename ${0}` download-link."
+
+
+# Download video and convert to audio
+docker run \
+  --rm \
+  --user ${UID}:${GID} \
+  --volume ${PWD}:/downloads \
+  wernight/youtube-dl \
+    "${1}" \
+    --extract-audio \
+    --audio-quality 0

@@ -1,0 +1,33 @@
+#! /usr/bin/env zsh
+
+# Description:
+#   A script to restore the contents of pass from a cleartext
+#   password file which was generated using pass-backup
+
+
+. `dirname ${0}`/src/includes/functions/assert_argument_count.zsh
+
+
+assert_argument_count equal 1 ${#} "Usage: `basename ${0}` path-to-password-file."
+
+
+# Check password file existence
+if [ ! -f "${1}" ]
+then
+  echo ""
+  echo "The password file \"${1}\" does not exist."
+  echo "Exiting..."
+  echo ""
+
+  exit 2
+fi
+
+
+# Insert the passwords
+cat ${1} | while read password_line
+do
+  local username=`echo ${password_line} | cut -d ' ' -f 1`
+  local password=`echo ${password_line} | cut -d ' ' -f 2`
+
+  echo "${password}\n${password}" | pass insert ${username}
+done

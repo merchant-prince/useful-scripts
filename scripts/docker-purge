@@ -1,0 +1,70 @@
+#! /usr/bin/env zsh
+
+# Description:
+#   A script to remove all the docker images, containers, and networks
+#   present on the host
+
+# Stop and remove all running docker containers
+if [[ "`docker ps -aq | wc -l`" -gt 0 ]]
+then
+  echo ""
+  echo "Stopping all docker containers"
+  echo ""
+
+  docker stop `docker ps -aq`
+
+  echo ""
+  echo "Removing all docker containers"
+  echo ""
+
+  docker rm `docker ps -aq`
+else
+  echo ""
+  echo "** No running containers found **"
+  echo ""
+fi
+
+
+# Remove all docker images
+if [[ "`docker images -q | wc -l`" -gt 0 ]]
+then
+  echo ""
+  echo "Removing all docker images"
+  echo ""
+
+  docker rmi `docker images -q`
+else
+  echo ""
+  echo "** No docker images found **"
+  echo ""
+fi
+
+
+# Remove all docker networks
+if [[ "`docker network ls -q | wc -l`" -gt 0 ]]
+then
+  echo ""
+  echo "Removing all docker networks"
+  echo ""
+
+  docker network rm `docker network ls -q`
+else
+  echo ""
+  echo "** No docker networks found **"
+  echo ""
+fi
+
+
+# Remove all docker volumes
+if [[ "`docker volume ls -q | wc -l`" -gt 0 ]]
+then
+  echo ""
+  echo "Removing all docker volumes"
+  echo ""
+
+  docker volume rm -f `docker volume ls -q`
+else
+  echo ""
+  echo "** No docker volumes found **"
+  echo ""
+fi

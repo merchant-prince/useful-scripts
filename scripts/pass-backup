@@ -1,0 +1,58 @@
+#! /usr/bin/env zsh
+
+# Description:
+#   A script to backup all the passwords present in pass
+#   to a file in cleartext
+
+
+. `dirname ${0}`/src/includes/functions/assert_argument_count.zsh
+
+
+assert_argument_count equal 1 ${#} "Usage: `basename ${0}` path-to-store-password-file."
+
+
+# Variables
+password_store_path="${HOME}/.password-store/"
+filetype=".gpg"
+output_filename="password-file"
+
+
+# Check if path provided is valid
+if [ ! -d ${1} ]
+then
+  echo ""
+  echo "The path provided is not valid"
+  echo "Exiting..."
+  echo ""
+
+  exit 2
+else
+  output_filepath="${1}/${output_filename}"
+fi
+
+
+# Check output file existence
+if [ -f "${output_filepath}" ]
+then
+  echo ""
+  echo "The output file \"${output_filename}\" already exists."
+  echo "Remove it, and re-run the backup script."
+  echo "Exiting..."
+  echo ""
+
+  exit 3
+fi
+
+
+# Create output file
+touch ${output_filepath}
+
+
+# Fill the output file
+for password_path in `find ${password_store_path} -name "*${filetype}"`
+do
+  # remove the prefix and suffix of the path
+  password_path=${${password_path%${filetype}}#${password_store_path}}
+
+  echo "${password_path} `pass ${password_path}`" >> ${output_filepath}
+done
