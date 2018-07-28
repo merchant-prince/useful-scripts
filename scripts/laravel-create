@@ -26,9 +26,9 @@ SSH_KEY_NAME="homestead-id_rsa"
 
 # Validate the project-name
 # Format: PascalCase alphanumeric
-if [[ "${1:0:1}" =~ [0-9] ]] \    # the name cannot start with a number
-|| ! [[ "${1:0:1}" =~ [A-Z] ]] \  # the name must start with an uppercase character
-|| [[ "${1}" =~ [^a-zA-Z0-9] ]]   # allowed characters in the project name
+if [[ "${1:0:1}" =~ [0-9] ]]    \
+|| ! [[ "${1:0:1}" =~ [A-Z] ]]  \
+|| [[ "${1}" =~ [^a-zA-Z0-9] ]]
 then
   echo ""
   echo "Bad project-name format."
