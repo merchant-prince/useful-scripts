@@ -1,5 +1,28 @@
 #!/usr/bin/env zsh
 
+# Description:
+#   This script is used to scaffold a new vue application which is run using
+#   docker.
+#
+#   The usage is a follows:
+#     * To create a new vue application with the name APP_NAME, run the
+#       following command:
+#         vue-docker create APPNAME
+#       The application will be created in a directory named APP_NAME in the
+#       current working directory.
+#
+#     * To run the application, go inside the application directory, and run
+#       the following command:
+#         vue-docker run
+#       The application will be available at localhost:8080.
+#
+#
+# Exit values:
+#   0 : Success
+#   1 : Wrong argument count
+#   2 : Wrong first argument (must be create or run)
+#   3 : Application was not created using vue-docker (missing lock-file)
+
 
 . `dirname ${0}`/src/includes/functions/assert_argument_count.zsh
 
@@ -34,7 +57,9 @@ create)
     --user `id -u`:`id -g` \
     --volume `pwd`:${APPLICATION_DIRECTORY} \
     ${IMAGE_NAME} \
-      vue create ${APPLICATION_NAME}
+      vue create \
+        --no-git \
+        ${APPLICATION_NAME}
 
   echo "APPLICATION_NAME=${APPLICATION_NAME}" > ${APPLICATION_NAME}/${LOCK_FILENAME}
   ;;
