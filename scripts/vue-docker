@@ -76,6 +76,8 @@ run)
   
   docker run \
     --rm \
+    --interactive \
+    --tty \
     --name "$(basename $(pwd))" \
     --user `id -u`:`id -g` \
     --volume `pwd`:${APPLICATION_DIRECTORY} \
