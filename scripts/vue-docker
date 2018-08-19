@@ -1,0 +1,70 @@
+#!/usr/bin/env zsh
+
+
+. `dirname ${0}`/src/includes/functions/assert_argument_count.zsh
+
+
+IMAGE_NAME=vue-development
+APPLICATION_DIRECTORY=/app
+LOCK_FILENAME=vue-docker.lock
+
+USAGE_CREATE="Usage: `basename ${0}` create <APPLICATION_NAME>"
+USAGE_RUN="Usage: `basename ${0}` run"
+
+
+case ${1} in
+create)
+  assert_argument_count equal 2 ${#} "${USAGE_CREATE}"
+
+  APPLICATION_NAME=${2}
+  
+  if [ `docker images | grep "${IMAGE_NAME}" | wc -l` -eq 0 ]
+  then
+    docker build \
+      --tag "${IMAGE_NAME}" \
+      --build-arg APPLICATION_DIRECTORY=${APPLICATION_DIRECTORY} \
+      `dirname ${0}`/src/docker/vue-docker
+  fi
+
+  docker run \
+    --rm \
+    --interactive \
+    --tty \
+    --name ${APPLICATION_NAME} \
+    --user `id -u`:`id -g` \
+    --volume `pwd`:${APPLICATION_DIRECTORY} \
+    ${IMAGE_NAME} \
+      vue create ${APPLICATION_NAME}
+
+  echo "APPLICATION_NAME=${APPLICATION_NAME}" > ${APPLICATION_NAME}/${LOCK_FILENAME}
+  ;;
+
+run)
+  if ! [ -e ${LOCK_FILENAME} ]
+  then
+    echo ""
+    echo "ERROR: This application was not created using vue-docker."
+    echo ""
+
+    exit 3
+  fi
+  
+  docker run \
+    --rm \
+    --name "$(basename $(pwd))" \
+    --user `id -u`:`id -g` \
+    --volume `pwd`:${APPLICATION_DIRECTORY} \
+    --publish 8000:8000 \
+    --publish 8080:8080 \
+    ${IMAGE_NAME}
+    ;;
+    
+*)
+  echo ""
+  echo "${USAGE_CREATE}"
+  echo "${USAGE_RUN}"
+  echo ""
+  
+  exit 2
+  ;;
+esac
