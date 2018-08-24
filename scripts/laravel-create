@@ -130,11 +130,11 @@ sed -i "s%'timezone' => 'UTC'%'timezone' => env('APP_TIMEZONE', 'UTC')%" config/
 sed -i "$(( $(grep -n '^APP_*' .env | tail -n 1 | cut -f 1 -d ':') + 1))iAPP_TIMEZONE=Indian/Mauritius" .env
 
 # Set the application locale environment variable, and set it to en
-sed "s%'locale' => 'en'%'locale' => env('APP_LOCALE', 'en')%" config/app.php
+sed -i "s%'locale' => 'en'%'locale' => env('APP_LOCALE', 'en')%" config/app.php
 sed -i "$(( $(grep -n '^APP_*' .env | tail -n 1 | cut -f 1 -d ':') + 1))iAPP_LOCALE=en" .env
 
 # Set the application fallback-locale environment variable, and set it to en
-sed "s%'fallback_locale' => 'en'%'fallback_locale' => env('APP_FALLBACK_LOCALE', 'en')%" config/app.php
+sed -i "s%'fallback_locale' => 'en'%'fallback_locale' => env('APP_FALLBACK_LOCALE', 'en')%" config/app.php
 sed -i "$(( $(grep -n '^APP_*' .env | tail -n 1 | cut -f 1 -d ':') + 1))iAPP_FALLBACK_LOCALE=en" .env
 
 # Set the application mail-sender's name line
