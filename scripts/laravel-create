@@ -54,7 +54,7 @@ fi
 
 
 # Create the image laravel-docker if non-existant
-if [[ `docker images | grep ${LARAVEL_DOCKER_IMAGE_NAME} | wc -l` -lt 0 ]]
+if [[ `docker images | grep ${LARAVEL_DOCKER_IMAGE_NAME} | wc -l` -eq 0 ]]
 then
   echo ""
   echo "Building the ${LARAVEL_DOCKER_IMAGE_NAME} image"
