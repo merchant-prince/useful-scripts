@@ -22,6 +22,8 @@ assert_argument_count equal 1 ${#} "Usage: `basename ${0}` project-name."
 
 # variables
 SSH_KEY_NAME="homestead-id_rsa"
+LARAVEL_DOCKER_IMAGE_NAME="laravel-docker"
+LARAVEL_DOCKER_PATH=""                      # is set during laravel installation
 
 
 # Validate the project-name
@@ -51,10 +53,26 @@ then
 fi
 
 
-# Pull a fresh laravel project through composer on docker
+# Create the image laravel-docker if non-existant
+if [[ `docker images | grep ${LARAVEL_DOCKER_IMAGE_NAME} | wc -l` -lt 0 ]]
+then
+  echo ""
+  echo "Building the ${LARAVEL_DOCKER_IMAGE_NAME} image"
+  echo ""
+
+  docker build -t ${LARAVEL_DOCKER_IMAGE_NAME} "`dirname ${0}`/src/docker/${LARAVEL_DOCKER_IMAGE_NAME}"
+fi
+
+
+# Pull a fresh laravel project through docker
 echo ""
 echo "Creating a fresh laravel application"
 echo ""
+
+LARAVEL_DOCKER_PATH=`docker run \
+                            --rm \
+                            ${LARAVEL_DOCKER_IMAGE_NAME} \
+                              find / -name 'laravel' | grep 'vendor/bin'`
 
 docker run \
   --rm \
@@ -62,8 +80,8 @@ docker run \
   --tty \
   --volume ${PWD}:/app \
   --user `id -u`:`id -g` \
-  composer \
-    composer create-project --prefer-dist laravel/laravel ${1}
+  ${LARAVEL_DOCKER_IMAGE_NAME} \
+    ${LARAVEL_DOCKER_PATH} new ${1}
 
 
 # Go into the project directory
@@ -89,7 +107,7 @@ docker run \
   --tty \
   --volume ${PWD}:/app \
   --user `id -u`:`id -g` \
-  composer \
+  ${LARAVEL_DOCKER_IMAGE_NAME} \
     composer require laravel/homestead --dev
 
 docker run \
@@ -98,7 +116,7 @@ docker run \
   --tty \
   --volume ${PWD}:/app \
   --user `id -u`:`id -g` \
-  composer \
+  ${LARAVEL_DOCKER_IMAGE_NAME} \
     php vendor/bin/homestead make
 
 docker run \
@@ -107,7 +125,7 @@ docker run \
   --tty \
   --volume ${PWD}:/app \
   --user `id -u`:`id -g` \
-  composer \
+  ${LARAVEL_DOCKER_IMAGE_NAME} \
     php artisan app:name ${1}
 
 # Set the ssh key to be able to connect to vagrant
