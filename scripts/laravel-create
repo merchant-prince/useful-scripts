@@ -107,7 +107,7 @@ docker run \
   --tty \
   --volume ${PWD}:/app \
   --user `id -u`:`id -g` \
-  ${LARAVEL_DOCKER_IMAGE_NAME} \
+  composer \
     composer require laravel/homestead --dev
 
 docker run \
@@ -116,7 +116,7 @@ docker run \
   --tty \
   --volume ${PWD}:/app \
   --user `id -u`:`id -g` \
-  ${LARAVEL_DOCKER_IMAGE_NAME} \
+  composer \
     php vendor/bin/homestead make
 
 docker run \
@@ -125,7 +125,7 @@ docker run \
   --tty \
   --volume ${PWD}:/app \
   --user `id -u`:`id -g` \
-  ${LARAVEL_DOCKER_IMAGE_NAME} \
+  composer \
     php artisan app:name ${1}
 
 # Set the ssh key to be able to connect to vagrant
