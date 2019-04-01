@@ -1,14 +1,18 @@
 #! /usr/bin/env zsh
 
 # Description:
-#   A script to backup all the passwords present in pass
+#   A script to export all the passwords present in pass
 #   to a file in cleartext
 
 
-. `dirname ${0}`/src/includes/functions/assert_argument_count.zsh
+if [[ ${#} -ne 1 ]]
+then
+  echo "ERROR: 1 argument expected; ${#} provided."
 
+  echo "Usage: `basename ${0}` PATH_TO_DESTINATION_DIRECTORY"
 
-assert_argument_count equal 1 ${#} "Usage: `basename ${0}` path-to-store-password-file."
+  exit 1
+fi
 
 
 # Variables
@@ -56,3 +60,8 @@ do
 
   echo "${password_path} `pass ${password_path}`" >> ${output_filepath}
 done
+
+
+echo ""
+echo "DONE!"
+echo ""

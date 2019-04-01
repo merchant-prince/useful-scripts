@@ -3,13 +3,14 @@
 # Description:
 #   A script to view all the images, containers, and networks present
 #   on the host
+#
 
 # View running containers
 echo ""
 echo "Running containers:"
 echo ""
 
-if [[ "`docker ps -aq | wc -l`" -eq 0 ]]
+if [[ `docker ps -aq | wc -l` -eq 0 ]]
 then
   echo ""
   echo "  ** No running containers **"
@@ -26,7 +27,7 @@ echo ""
 echo "Local images:"
 echo ""
 
-if [[ "`docker images -q | wc -l`" -eq 0 ]]
+if [[ `docker images -q | wc -l` -eq 0 ]]
 then
   echo ""
   echo "  ** No docker images **"
@@ -43,7 +44,7 @@ echo ""
 echo "Networks:"
 echo ""
 
-if [[ "`docker network ls -q | wc -l`" -eq 0 ]]
+if [[ `docker network ls -q | wc -l` -eq 0 ]]
 then
   echo ""
   echo "  ** No docker networks **"
@@ -60,7 +61,7 @@ echo ""
 echo "Volumes:"
 echo ""
 
-if [[ "`docker volume ls -q | wc -l`" -eq 0 ]]
+if [[ `docker volume ls -q | wc -l` -eq 0 ]]
 then
   echo ""
   echo "  ** No docker volumes **"

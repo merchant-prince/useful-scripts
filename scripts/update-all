@@ -1,0 +1,14 @@
+#! /usr/bin/env zsh
+
+##
+# This script is used to upgrade all the packages on the system
+##
+
+# Select the best miror
+sudo pacman-mirrors -f
+
+# Upgrade pacman packages
+sudo pacman -Syyu
+
+# Upgrade the AUR packages
+yaourt -Syyua
