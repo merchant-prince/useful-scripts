@@ -44,10 +44,11 @@ echo ""
 echo "Networks:"
 echo ""
 
-if [[ `docker network ls -q | wc -l` -eq 0 ]]
+if [[ `docker network ls -q | wc -l` -eq 3 ]] \
+&& [[ `docker network ls --format "{{.Name}}" | egrep -c "(bridge|none|host)"` -eq 3 ]]
 then
   echo ""
-  echo "  ** No docker networks **"
+  echo "  ** No user-defined docker networks **"
   echo ""
 else
   docker network ls
