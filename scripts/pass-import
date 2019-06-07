@@ -1,8 +1,10 @@
 #! /usr/bin/env zsh
 
+##
 # Description:
 #   A script to restore the contents of pass from a cleartext
 #   password file which was generated using pass-backup
+##
 
 
 if [[ ${#} -ne 1 ]]
@@ -39,5 +41,5 @@ done
 
 
 echo ""
-echo "DONE!"
+echo "Passwords successfully restored!"
 echo ""

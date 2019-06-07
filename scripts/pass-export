@@ -1,8 +1,10 @@
 #! /usr/bin/env zsh
 
+##
 # Description:
 #   A script to export all the passwords present in pass
 #   to a file in cleartext
+##
 
 
 if [[ ${#} -ne 1 ]]
@@ -63,5 +65,5 @@ done
 
 
 echo ""
-echo "DONE!"
+echo "Passwords successfully backed up!"
 echo ""

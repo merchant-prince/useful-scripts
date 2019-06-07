@@ -1,14 +1,59 @@
 #! /usr/bin/env zsh
 
 ##
-# This script is used to upgrade all the packages on the system
+# Description:
+#   This script is used to upgrade all the packages on the system
 ##
 
-# Select the best miror
-sudo pacman-mirrors -f
+
+# Functions
+function usage()
+{
+  echo ""
+  echo "usage: `basename ${1}` [-r|--refresh]"
+  echo ""
+}
+
+
+# Refresh pacman mirrors
+if [[ ${#} -eq 0 ]]
+then
+  # do nothing
+
+elif [[ ${#} -eq 1 ]]
+then
+  if [[ ${1} = "-r" ]] || [[ ${1} = "--refresh" ]]
+  then
+    echo ""
+    echo "** Refreshing pacman mirrors **"
+    echo ""
+
+    sudo pacman-mirrors -f
+
+  else
+    usage ${0}
+
+    exit 1
+  fi
+
+else
+  usage ${0}
+
+  exit 2
+fi
+
 
 # Upgrade pacman packages
+echo ""
+echo "** Upgrading Pacman packages **"
+echo ""
+
 sudo pacman -Syyu
 
+
 # Upgrade the AUR packages
+echo ""
+echo "** Upgrading AUR packages **"
+echo ""
+
 yaourt -Syyua

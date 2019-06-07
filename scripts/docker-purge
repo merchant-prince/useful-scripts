@@ -1,8 +1,10 @@
 #! /usr/bin/env zsh
 
+##
 # Description:
 #   A script to remove all the docker images, containers, and networks
 #   present on the host
+##
 
 # Stop and remove all running docker containers
 if [[ "`docker ps -aq | wc -l`" -gt 0 ]]

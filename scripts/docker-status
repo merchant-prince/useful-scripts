@@ -1,9 +1,10 @@
 #! /usr/bin/env zsh
 
+##
 # Description:
 #   A script to view all the images, containers, and networks present
 #   on the host
-#
+##
 
 # View running containers
 echo ""
