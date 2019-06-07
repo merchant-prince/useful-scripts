@@ -20,6 +20,7 @@ then
   echo ""
 
   docker rm `docker ps -aq`
+
 else
   echo ""
   echo "** No running containers found **"
@@ -35,6 +36,7 @@ then
   echo ""
 
   docker rmi `docker images -q`
+
 else
   echo ""
   echo "** No docker images found **"
@@ -43,17 +45,19 @@ fi
 
 
 # Remove all docker networks
-if [[ "`docker network ls -q | wc -l`" -gt 0 ]]
+if [[ `docker network ls -q | wc -l` -eq 3 ]] \
+&& [[ `docker network ls --format "{{.Name}}" | egrep -c "(bridge|none|host)"` -eq 3 ]]
 then
+  echo ""
+  echo "** No docker networks found **"
+  echo ""
+
+else
   echo ""
   echo "Removing all docker networks"
   echo ""
 
   docker network rm `docker network ls -q`
-else
-  echo ""
-  echo "** No docker networks found **"
-  echo ""
 fi
 
 
@@ -65,6 +69,7 @@ then
   echo ""
 
   docker volume rm -f `docker volume ls -q`
+
 else
   echo ""
   echo "** No docker volumes found **"
