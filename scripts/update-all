@@ -57,11 +57,3 @@ echo "** Upgrading AUR packages **"
 echo ""
 
 yaourt -Syyua
-
-
-# Upgrade yarn packages
-echo ""
-echo "** Upgrading yarn packages **"
-echo ""
-
-yarn global upgrade
