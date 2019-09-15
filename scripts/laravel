@@ -307,7 +307,7 @@ ENTRYPOINT ["openssl"]
 
 def generate_nginx_configuration():
     with cd("configuration/nginx"):
-        defaultConf = f"""\
+        configuration = f"""\
 server {{
     listen 80 default_server;
     server_name {projectUri};
@@ -356,8 +356,8 @@ server {{
 
         Print.info("Generating nginx configuration file")
 
-        with open('default.conf', 'w') as conf:
-            conf.write(defaultConf)
+        with open(f"{projectUri}.conf", 'w') as conf:
+            conf.write(configuration)
 
         Print.ok()
         Print.eol(2)
@@ -426,7 +426,7 @@ services:
         image: nginx:latest
         container_name: nginx
         volumes:
-            - ./configuration/nginx/default.conf:/etc/nginx/conf.d/default.conf
+            - ./configuration/nginx/{projectUri}.conf:/etc/nginx/conf.d/{projectUri}.conf
             - ./application/{projectName}:{server['root']}
             - ./certificate/ssl:{ssl['path']}
         ports:
