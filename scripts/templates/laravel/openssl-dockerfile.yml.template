@@ -1,0 +1,11 @@
+ARG TAG=latest
+
+FROM debian:$${TAG}
+
+RUN apt-get update && apt-get install -y openssl
+
+WORKDIR ${workingDirectory}
+
+VOLUME ${workingDirectory}
+
+ENTRYPOINT ["openssl"]

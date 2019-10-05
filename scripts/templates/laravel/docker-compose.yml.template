@@ -1,0 +1,64 @@
+version: '3.7'
+
+services:
+    nginx:
+        image: nginx:latest
+        container_name: nginx
+        volumes:
+            - ./configuration/nginx/${projectUri}.conf:/etc/nginx/conf.d/${projectUri}.conf
+            - ./application/${projectName}:${serverRoot}
+            - ./certificate/ssl:${sslPath}
+        ports:
+            - "80:80"
+            - "443:443"
+        depends_on:
+            - php
+        networks:
+            - application
+
+    php:
+        build:
+            context: ./dockerfile/php
+            args:
+                - TAG=fpm
+                - USER_ID=${userId}
+                - GROUP_ID=${groupId}
+        container_name: php
+        volumes:
+            - ./application/${projectName}:${serverRoot}
+        depends_on:
+            - postgresql
+            - redis
+        networks:
+            - application
+            - database
+            - redis
+
+    postgresql:
+        image: postgres:latest
+        container_name: postgresql
+        volumes:
+            - database:/var/lib/postgresql/data
+        environment:
+            POSTGRES_DB: "${databaseName}"
+            POSTGRES_USER: "${databaseUsername}"
+            POSTGRES_PASSWORD: "${databasePassword}"
+        networks:
+            - database
+
+    redis:
+        image: redis:latest
+        container_name: redis
+        volumes:
+            - redis:/data
+        networks:
+            - redis
+
+networks:
+    application:
+    database:
+    redis:
+
+volumes:
+    database:
+    redis:
