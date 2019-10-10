@@ -16,6 +16,7 @@ from subprocess import run
 
 from modules.cd import cd
 from modules.Print import Print
+from modules.Utils import check_project_name, check_project_existence
 
 
 
@@ -52,45 +53,9 @@ database = {
 }
 
 
-templatesPath = os.path.dirname(os.path.realpath(__file__)) + "/templates/laravel"
+templatesPath = f"{os.path.dirname(os.path.realpath(__file__))}/templates/laravel"
 
 
-
-"""
-Pre-Installation
-"""
-
-
-def check_project_name():
-    Print.info("Checking project name")
-
-    projectNameIsPascalCased = bool(re.match('^[A-Z][a-z]+(?:[A-Z][a-z]+)*$', projectName))
-
-    if projectNameIsPascalCased:
-        Print.ok()
-        Print.eol(2)
-    else:
-        Print.fail()
-        Print.eol(2)
-        Print.error("The project name is not pascal-cased")
-        Print.eol()
-        sys.exit(1)
-
-
-def check_project_existence():
-    Print.info("Checking project existence within current directory")
-
-    projectExists = os.path.isdir(projectName) if projectName in os.listdir() else False
-
-    if not projectExists:
-        Print.ok()
-        Print.eol(2)
-    else:
-        Print.fail()
-        Print.eol(2)
-        Print.error("Another project with the same name already exists in this directory")
-        Print.eol()
-        sys.exit(1)
 
 
 """
@@ -98,7 +63,7 @@ Installation
 """
 
 
-def define_directory_structure():
+def create_directory_structure():
     Print.info("Creating directory structure of project")
 
     os.mkdir(projectName)
@@ -376,10 +341,10 @@ if __name__ == "__main__":
     if arguments.actions == "new":
         projectName = arguments.name
 
-        check_project_name()
-        check_project_existence()
+        check_project_name(projectName)
+        check_project_existence(projectName)
 
-        define_directory_structure()
+        create_directory_structure()
 
         goto_project_root()
 

@@ -1,0 +1,47 @@
+version: "2.1"
+
+services:
+    prestashop:
+        image: prestashop/prestashop
+        container_name: "prestashop"
+        ports:
+            - "${projectPort}:80"
+        environment:
+            PS_DEV_MODE: 1
+            DB_SERVER: "database"
+            DB_USER: "${databaseUsername}"
+            DB_PASSWD: "${databasePassword}"
+            DB_NAME: "${databaseName}"
+            DB_PREFIX: "${databasePrefix}"
+            PS_INSTALL_AUTO: 1
+            PS_ERASE_DB: 1
+            PS_DOMAIN: "${projectUri}"
+            PS_LANGUAGE: "en"
+            PS_COUNTRY: "GB"
+            PS_FOLDER_ADMIN: "administration"
+            PS_FOLDER_INSTALL: "installation"
+            ADMIN_MAIL: "${administratorMail}"
+            ADMIN_PASSWD: "${administratorPassword}"
+        volumes:
+            - ./application/${projectName}:/var/www/html
+        depends_on:
+            database:
+                condition: service_healthy
+
+    database:
+        image: mysql:5.7
+        container_name: "mysql"
+        environment:
+            MYSQL_DATABASE: "${databaseName}"
+            MYSQL_USER: "${databaseUsername}"
+            MYSQL_PASSWORD: "${databasePassword}"
+            MYSQL_ROOT_PASSWORD: "${databaseRootPassword}"
+        volumes:
+            - mysql:/var/lib/mysql
+        healthcheck:
+            test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "--user=root", "--password=${databaseRootPassword}"]
+            timeout: 20s
+            retries: 10
+
+volumes:
+    mysql:

@@ -1,0 +1,36 @@
+version: "3.7"
+
+services:
+    wordpress:
+        image: wordpress
+        container_name: "wordpress"
+        restart: always
+        ports:
+            - "${projectPort}:80"
+        environment:
+            WORDPRESS_DB_HOST: "database"
+            WORDPRESS_DB_USER: "${databaseUsername}"
+            WORDPRESS_DB_PASSWORD: "${databasePassword}"
+            WORDPRESS_DB_NAME: "${databaseName}"
+            WORDPRESS_DEBUG: 1
+            WORDPRESS_CONFIG_EXTRA: |
+                define("WP_SITE_URL", "http://${projectUri}");
+        volumes:
+            - ./application/${projectName}:/var/www/html
+        depends_on:
+            - database
+
+    database:
+        image: mysql:5.7
+        container_name: "mysql"
+        restart: always
+        environment:
+            MYSQL_DATABASE: "${databaseName}"
+            MYSQL_USER: "${databaseUsername}"
+            MYSQL_PASSWORD: "${databasePassword}"
+            MYSQL_RANDOM_ROOT_PASSWORD: 1
+        volumes:
+            - mysql:/var/lib/mysql
+
+volumes:
+    mysql:

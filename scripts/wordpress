@@ -1,0 +1,149 @@
+#! /usr/bin/env python
+
+
+import os
+import getpass
+import argparse
+from string import Template
+from subprocess import run
+
+from modules.cd import cd
+from modules.Print import Print
+from modules.Utils import check_project_name, check_project_existence
+
+
+
+
+"""
+Variables
+"""
+
+
+project = {
+        "name": None,
+        "uri": "wordpress.local",
+        "port": 80
+}
+
+database = {
+        "name": "wordpress",
+        "username": "user",
+        "password": "password"
+}
+
+user = {
+        "name": getpass.getuser()
+}
+
+templatesPath = f"{os.path.dirname(os.path.realpath(__file__))}/templates/wordpress"
+
+
+
+
+"""
+Installation
+"""
+
+
+def create_directory_structure():
+    Print.info("Creating the directory structure of the project")
+
+    os.mkdir(project["name"])
+
+    with cd(project["name"]):
+        os.mkdir("application")
+
+        with cd("application"):
+            os.mkdir(project["name"])
+
+    Print.ok()
+    Print.eol(2)
+
+
+def goto_project_root():
+    Print.info("Going to project root")
+
+    os.chdir(project["name"])
+
+    Print.ok()
+    Print.eol(2)
+
+
+
+
+def create_docker_compose_file():
+    dockerComposeTemplateName = "docker-compose.yml.template"
+    dockerComposeFileContent = None
+
+    with open(f"{templatesPath}/{dockerComposeTemplateName}") as dockerComposeTemplate:
+        dockerComposeFileContent = Template(dockerComposeTemplate.read()).safe_substitute(
+                projectName=project["name"],
+                projectUri=project["uri"],
+                projectPort=project["port"],
+                databaseName=database["name"],
+                databaseUsername=database["username"],
+                databasePassword=database["password"]
+        )
+
+    Print.info("Generating docker-compose file")
+
+    with open("docker-compose.yml", "w") as dockerComposeFile:
+        dockerComposeFile.write(dockerComposeFileContent)
+
+    Print.ok()
+    Print.eol(2)
+
+
+
+
+"""
+Post-Installation
+"""
+
+
+def initialize_git_repository_for_project():
+    Print.info("Initializing git repository for project")
+    Print.eol(2)
+
+    with cd(f"application/{project['name']}"):
+        run(["git", "init"])
+        run(["git", "add", "."])
+        run(["git", "commit", "-m", "initial commit"])
+        run(["git", "checkout", "-b", "development"])
+
+    Print.eol(2)
+    Print.success("Initialized git repository for project")
+    Print.eol(2)
+
+
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="A script the automate the installation of a Wordpress project.")
+
+    subparsers = parser.add_subparsers(dest="actions")
+
+    new_command = subparsers.add_parser("new", help="Install a new Wordpress application in the current directory")
+    new_command.add_argument("name", help="The project name (should be PascalCased)")
+
+    arguments = parser.parse_args()
+
+    if arguments.actions == "new":
+        project["name"] = arguments.name
+
+        check_project_name(project["name"])
+        check_project_existence(project["name"])
+
+        create_directory_structure()
+
+        goto_project_root()
+
+        create_docker_compose_file()
+
+        initialize_git_repository_for_project()
+
+        Print.eol(2)
+        Print.warning(f"Your project is owned by 'http'. Run:  'sudo setfacl -R -m u:{user['name']}:rwx ./application/{project['name']}/*'  after the first run.")
+        Print.eol(2)
+        Print.success(f"Your project will be available at: http://{project['uri']}{'' if project['port'] == 80 else ':' + str(project['port'])}")
+        Print.eol(2)
