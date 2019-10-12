@@ -5,7 +5,7 @@ FROM php:$${TAG}
 RUN apt-get update \
  && apt-get install -y libpq-dev \
  && docker-php-ext-configure pgsql \
- && docker-php-ext-install pdo_pgsql pgsql pcntl \
+ && docker-php-ext-install bcmath pdo_pgsql pgsql pcntl \
  && pecl install redis \
  && docker-php-ext-enable redis \
  && rm -rf /var/lib/apt/lists/*

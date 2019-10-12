@@ -102,12 +102,14 @@ def goto_project_root():
 def generate_ssl_certificates():
 
     imageName = "harivansh/laravel-docker-openssl"
-    dockerfileTemplateName = "openssl-dockerfile.yml.template"
+    dockerfileTemplateName = "openssl-dockerfile.template"
     workingDirectory = "/certificates"
     dockerfileContent = None
 
     with open(f"{templatesPath}/{dockerfileTemplateName}") as dockerfileTemplate:
-        dockerfileContent = Template(dockerfileTemplate.read()).safe_substitute(workingDirectory=workingDirectory)
+        dockerfileContent = Template(dockerfileTemplate.read()).safe_substitute(
+                workingDirectory=workingDirectory
+        )
 
     with cd("certificate/ssl"):
         Print.info("Creating docker openssl image")
@@ -153,7 +155,6 @@ def generate_ssl_certificates():
 
 
 def generate_nginx_configuration():
-
     configurationTemplateName = "dev.local.conf.template"
     nginxConfiguration = None
 
@@ -177,8 +178,7 @@ def generate_nginx_configuration():
 
 
 def generate_php_dockerfile():
-
-    dockerfileTemplateName = "php-dockerfile.yml.template"
+    dockerfileTemplateName = "php-dockerfile.template"
     dockerfileContent = None
 
     with open(f"{templatesPath}/{dockerfileTemplateName}") as dockerfileTemplate:
@@ -224,7 +224,6 @@ def generate_docker_compose():
 
 
 def generate_run_binary():
-
     binaryTemplateName = "run.template"
     binaryContent = None
 
@@ -249,7 +248,6 @@ def generate_run_binary():
 
 
 def install_laravel_framework():
-
     Print.info("Pulling fresh laravel application")
     Print.eol(2)
 
@@ -294,7 +292,6 @@ def initialize_git_repository_for_project():
 
 
 def edit_env_file():
-
     envTemplateName = "env.template"
     envContent = None
     envFilePath = f"application/{projectName}/.env"
