@@ -4,35 +4,50 @@ import os
 from .Print import Print
 
 
+class Check:
+    """
+    A utility class to perform various checks on a project
+    """
+
+    def __init__(self, projectName):
+        self.projectName = projectName
 
 
-def check_project_name(projectName):
-    Print.info("Checking project name")
+    def projectName(self):
+        """
+        Check the project name
+        """
 
-    projectNameIsPascalCased = bool(re.match('^[A-Z][a-z]+(?:[A-Z][a-z]+)*$', projectName))
+        Print.info("Checking project name")
 
-    if projectNameIsPascalCased:
-        Print.ok()
-        Print.eol(2)
-    else:
-        Print.fail()
-        Print.eol(2)
-        Print.error("The project name is not pascal-cased")
-        Print.eol()
-        sys.exit(1)
+        projectNameIsPascalCased = bool(re.match('^[A-Z][a-z]+(?:[A-Z][a-z]+)*$', self.projectName))
+
+        if projectNameIsPascalCased:
+            Print.ok()
+            Print.eol(2)
+        else:
+            Print.fail()
+            Print.eol(2)
+            Print.error("The project name is not pascal-cased")
+            Print.eol()
+            sys.exit(1)
 
 
-def check_project_existence(projectName):
-    Print.info("Checking project existence within current directory")
+    def projectExistence():
+        """
+        Check if a project with the same name already exists in the current directory
+        """
 
-    projectExists = os.path.isdir(projectName) if projectName in os.listdir() else False
+        Print.info("Checking project existence within current directory")
 
-    if not projectExists:
-        Print.ok()
-        Print.eol(2)
-    else:
-        Print.fail()
-        Print.eol(2)
-        Print.error("Another project with the same name already exists in this directory")
-        Print.eol()
-        sys.exit(1)
+        projectExists = os.path.isdir(projectName) if self.projectName in os.listdir() else False
+
+        if not projectExists:
+            Print.ok()
+            Print.eol(2)
+        else:
+            Print.fail()
+            Print.eol(2)
+            Print.error("Another project with the same name already exists in this directory")
+            Print.eol()
+            sys.exit(1)

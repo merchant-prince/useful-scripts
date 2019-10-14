@@ -12,21 +12,25 @@ class Color:
             "RESET": 0
     }
 
+
     def __create(self, colorCode):
         CSI = "\033["
         END = "m"
 
         return f"{CSI}{colorCode}{END}"
 
+
     def __message(self, colorCode):
         FOREGROUND = "40;38;5"
 
         return f"{FOREGROUND};{colorCode}"
 
+
     def __banner(self, colorCode):
         BACKGROUND = "30;48;5"
 
         return f"{BACKGROUND};{colorCode}"
+
 
     def __getattr__(self, name):
         tokens = name.split("_")

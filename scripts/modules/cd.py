@@ -10,8 +10,10 @@ class cd:
         self.oldpath = os.getcwd()
         self.newpath = newpath
 
+
     def __enter__(self):
         os.chdir(self.newpath)
+
 
     def __exit__(self, etype, value, traceback):
         os.chdir(self.oldpath)

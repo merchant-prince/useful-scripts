@@ -6,353 +6,223 @@ Imports
 """
 
 
-import re
 import os
-import sys
 import stat
 import argparse
-from string import Template
 from subprocess import run
 
 from modules.cd import cd
+from modules.Git import Git
 from modules.Print import Print
-from modules.Utils import check_project_name, check_project_existence
-
-
-
-
-"""
-Variables
-"""
-
-
-projectName = None
-projectUri = "dev.local"
-
-userId = os.geteuid()
-groupId = os.getegid()
-
-ssl = {
-        'path': '/etc/nginx/ssl',
-        'key': 'key.pem',
-        'cert': 'cert.pem'
-}
-
-server = {
-        'root': '/var/www/html'
-}
-
-php = {
-        'port': 9000
-}
-
-database = {
-        'name': 'application',
-        'username': 'username',
-        'password': 'password'
-}
-
-
-templatesPath = f"{os.path.dirname(os.path.realpath(__file__))}/templates/laravel"
-
-
-
-
-"""
-Installation
-"""
-
-
-def create_directory_structure():
-    Print.info("Creating directory structure of project")
-
-    os.mkdir(projectName)
-
-    with cd(projectName):
-        os.mkdir("configuration")
-
-        with cd("configuration"):
-            os.mkdir("nginx")
-
-        os.mkdir("certificate")
-
-        with cd("certificate"):
-            os.mkdir("ssl")
-
-        os.mkdir("dockerfile")
-
-        with cd("dockerfile"):
-            os.mkdir("php")
-
-        os.mkdir("application")
-
-    Print.ok()
-    Print.eol(2)
-
-
-def goto_project_root():
-    Print.info("Going to project root")
-
-    os.chdir(projectName)
-
-    Print.ok()
-    Print.eol(2)
-
-
-def generate_ssl_certificates():
-
-    imageName = "harivansh/laravel-docker-openssl"
-    dockerfileTemplateName = "openssl-dockerfile.template"
-    workingDirectory = "/certificates"
-    dockerfileContent = None
-
-    with open(f"{templatesPath}/{dockerfileTemplateName}") as dockerfileTemplate:
-        dockerfileContent = Template(dockerfileTemplate.read()).safe_substitute(
-                workingDirectory=workingDirectory
-        )
-
-    with cd("certificate/ssl"):
-        Print.info("Creating docker openssl image")
-        Print.eol(2)
-
-        process = run([
-            "docker", "build", "--tag", imageName,
-                               "-"
-        ], input=dockerfileContent, encoding="ascii", check=True)
-
-        Print.eol()
-        Print.success("Created docker openssl image")
-        Print.eol(2)
-
-
-        Print.info("Generating ssl certificates")
-        Print.eol(2)
-
-        run(["docker", "run", "--rm",
-                              "--interactive",
-                              "--tty",
-                              "--mount", f"type=bind,source={os.getcwd()},target={workingDirectory}",
-                              "--user", f"{userId}:{groupId}",
-                              imageName, "req", "-x509",
-                                                "-newkey",
-                                                "rsa:4096",
-                                                "-keyout", ssl['key'],
-                                                "-out", ssl['cert'],
-                                                "-days", "365",
-                                                "-nodes",
-                                                "-sha256",
-                                                "-subj", ("/C=MU"
-                                                          "/ST=Pamplemousses"
-                                                          "/L=Piton"
-                                                          "/O=Redshift"
-                                                          "/OU=IT"
-                                                          f"/CN={projectUri}")
-        ], check=True)
-
-        Print.eol()
-        Print.success("SSL certificates generated")
-        Print.eol(2)
-
-
-def generate_nginx_configuration():
-    configurationTemplateName = "dev.local.conf.template"
-    nginxConfiguration = None
-
-    with open(f"{templatesPath}/{configurationTemplateName}") as configurationFile:
-        nginxConfiguration = Template(configurationFile.read()).safe_substitute(
-                projectUri=projectUri,
-                sslCertPath=f"{ssl['path']}/{ssl['cert']}",
-                sslKeyPath=f"{ssl['path']}/{ssl['key']}",
-                serverRoot=server['root'],
-                phpFpmPort=php['port']
-        )
-
-    with cd("configuration/nginx"):
-        Print.info("Generating nginx configuration file")
-
-        with open(f"{projectUri}.conf", 'w') as nginxConfigurationFile:
-            nginxConfigurationFile.write(nginxConfiguration)
-
-        Print.ok()
-        Print.eol(2)
-
-
-def generate_php_dockerfile():
-    dockerfileTemplateName = "php-dockerfile.template"
-    dockerfileContent = None
-
-    with open(f"{templatesPath}/{dockerfileTemplateName}") as dockerfileTemplate:
-        dockerfileContent = Template(dockerfileTemplate.read()).safe_substitute(
-                userId=userId,
-                groupId=groupId
-        )
-
-    with cd("dockerfile/php"):
-        Print.info("Generating php dockerfile")
-
-        with open("Dockerfile", "w") as phpDockerfile:
-            phpDockerfile.write(dockerfileContent)
-
-        Print.ok()
-        Print.eol(2)
-
-
-def generate_docker_compose():
-    dockerComposeTemplateName = "docker-compose.yml.template"
-    dockerComposeContent = None
-
-    with open(f"{templatesPath}/{dockerComposeTemplateName}") as dockerComposeTemplate:
-        dockerComposeContent = Template(dockerComposeTemplate.read()).safe_substitute(
-                projectUri=projectUri,
-                projectName=projectName,
-                serverRoot=server['root'],
-                sslPath=ssl['path'],
-                userId=userId,
-                groupId=groupId,
-                databaseName=database['name'],
-                databaseUsername=database['username'],
-                databasePassword=database['password']
-        )
-
-    Print.info("Generating docker-compose file")
-
-    with open("docker-compose.yml", "w") as dockerComposeFile:
-        dockerComposeFile.write(dockerComposeContent)
-
-    Print.ok()
-    Print.eol(2)
-
-
-def generate_run_binary():
-    binaryTemplateName = "run.template"
-    binaryContent = None
-
-    with open(f"{templatesPath}/{binaryTemplateName}") as binaryTemplate:
-        binaryContent = Template(binaryTemplate.read()).safe_substitute(
-                userId=userId,
-                groupId=groupId,
-                projectName=projectName
-        )
-
-    Print.info("Generating run binary")
-
-    with open("run", "w") as binaryFile:
-        binaryFile.write(binaryContent)
-
-    binaryFileStat = os.stat("run")
-
-    os.chmod("run", binaryFileStat.st_mode | stat.S_IEXEC)
-
-    Print.ok()
-    Print.eol(2)
-
-
-def install_laravel_framework():
-    Print.info("Pulling fresh laravel application")
-    Print.eol(2)
-
-    with cd("application"):
-        workingDirectory = "/application"
-
-        run([
-            "docker", "run", "--rm",
-                             "--interactive",
-                             "--tty",
-                             "--user", f"{userId}:{groupId}",
-                             "--workdir", workingDirectory,
-                             "--mount", f"type=bind,source={os.getcwd()},target={workingDirectory}",
-                             "composer", "create-project", "--prefer-dist",
-                                                           "--ignore-platform-reqs",
-                                                           "laravel/laravel", projectName
-        ])
-
-        Print.eol()
-        Print.success("Pulled fresh laravel application")
-        Print.eol(2)
-
-
-
-
-"""
-Post-Installation
-"""
-
-
-def initialize_git_repository_for_project():
-    Print.info("Initializing git repository for project")
-
-    with cd(f"application/{projectName}"):
-        run(["git", "init"])
-        run(["git", "add", "."])
-        run(["git", "commit", "-m", "initial commit"])
-        run(["git", "checkout", "-b", "development"])
-
-    Print.ok()
-    Print.eol(2)
-
-
-def edit_env_file():
-    envTemplateName = "env.template"
-    envContent = None
-    envFilePath = f"application/{projectName}/.env"
-    applicationKey = None
-
-    # Get the application key
-    with open(envFilePath) as envFile:
-        for line in envFile:
-            if re.search("APP_KEY", line):
-                applicationKey = re.findall("APP_KEY=(.*)", line.strip())[0]
-                break
-
-    with open(f"{templatesPath}/{envTemplateName}") as envTemplate:
-        envContent = Template(envTemplate.read()).safe_substitute(
-                projectName=projectName,
-                applicationKey=applicationKey,
-                projectUri=projectUri,
-                databaseName=database['name'],
-                databaseUsername=database['username'],
-                databasePassword=database['password']
-        )
-
-        with open(envFilePath, "w") as envFile:
-            envFile.write(envContent)
-
-
-
-
-"""
-Run
-"""
+from modules.Utils import Check
+from modules.Template import Template
+from modules.DirectoryStructure import DirectoryStructure
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="A script to automate the installation of a Laravel project.")
-
     subparsers = parser.add_subparsers(dest="actions")
-
     new_command = subparsers.add_parser("new", help="Install a new laravel application in the current directory")
+
     new_command.add_argument("name", help="The project name (should be PascalCased)")
 
     arguments = parser.parse_args()
 
     if arguments.actions == "new":
-        projectName = arguments.name
 
-        check_project_name(projectName)
-        check_project_existence(projectName)
+        """
+        Variables
+        """
 
-        create_directory_structure()
+        project = {
+                "name": arguments.name,
+                "uri": "dev.local"
+        }
 
-        goto_project_root()
+        user = {
+                "id": os.geteuid()
+        }
 
-        generate_ssl_certificates()
-        generate_nginx_configuration()
-        generate_php_dockerfile()
-        generate_docker_compose()
-        generate_run_binary()
+        group = {
+                "id": os.getegid()
+        }
 
-        install_laravel_framework()
+        ssl = {
+                "path": "/etc/nginx/ssl",
+                "key": "key.pem",
+                "cert": "cert.pem"
+        }
 
-        initialize_git_repository_for_project()
+        server = {
+                "root": "/var/www/html"
+        }
 
-        edit_env_file()
+        php = {
+                "port": 9000
+        }
+
+        database = {
+                "name": "application",
+                "username": "username",
+                "password": "password"
+        }
+
+        templatesPath = f"{os.path.dirname(os.path.realpath(__file__))}/templates/laravel"
+
+        """
+        Run
+        """
+
+        check = Check(project["name"])
+
+        check.projectName()
+        check.projectExistence()
+
+        Print.info("Creating the directory structure of project")
+        DirectoryStructure({
+            project["name"]: {
+                "configuration": {
+                    "nginx": {}
+                },
+                "certificate": {
+                    "ssl": {}
+                },
+                "dockerfile": {
+                    "php": {}
+                },
+                "application": {}
+            }
+        })
+        Print.ok()
+        Print.eol(2)
+
+        Print.info("Going to the project root")
+        with cd(project["name"]):
+            with cd("certificate/ssl"):
+                openssl = {
+                        "imageName": "harivansh/laravel-docker-openssl"
+                        "workingDirectory": "/certificates"
+                }
+
+                Print.info("Creating docker openssl image")
+                Print.eol(2)
+                run(["docker", "build", "--tag", openssl["imageName"],
+                                        "-"
+                ], input=str(
+                    Template(f"{templatesPath}/openssl-dockerfile.template").replace({
+                        "workingDirectory": openssl["workingDirectory"]
+                })), encoding="ascii", check=True)
+
+                Print.eol()
+                Print.success("Created docker openssl image")
+                Print.eol(2)
+
+                Print.info("Generating ssl certificates")
+                Print.eol(2)
+                run(["docker", "run", "--rm",
+                                      "--interactive",
+                                      "--tty",
+                                      "--mount", f"type=bind,source={os.getcwd()},target={openssl['workingDirectory']}",
+                                      "--user", f"{user['id']}:{group['id']}",
+                                      openssl["imageName"], "req", "-x509",
+                                                            "-newkey",
+                                                            "rsa:4096",
+                                                            "-keyout", ssl["key"],
+                                                            "-out", ssl["cert"],
+                                                            "-days", "365",
+                                                            "-nodes",
+                                                            "-sha256",
+                                                            "-subj", ("/C=MU"
+                                                                      "/ST=Pamplemousses"
+                                                                      "/L=Piton"
+                                                                      "/O=Redshift"
+                                                                      "/OU=IT"
+                                                                      f"/CN={project['uri']}")
+                ], check=True)
+                Print.eol()
+                Print.success("SSL certificates generated")
+                Print.eol(2)
+
+            Print.info("Generating the nginx configuration file")
+            with cd("configuration/nginx"):
+                Template(f"{templatesPath}/nginx.conf.template").replace({
+                    "projectUri": project["uri"],
+                    "sslCertPath": f"{ssl['path']}/{ssl['cert']}",
+                    "sslKeyPath": f"{ssl['path']}/{ssl['key']}",
+                    "serverRoot": server["root"],
+                    "phpFpmPort": php["port"]
+                }).write(f"{project['uri']}.conf")
+            Print.ok()
+            Print.eol(2)
+
+            Print.info("Generating the php dockerfile")
+            with cd("dockerfile/php"):
+                Template(f"{templatesPath}/php-dockerfile.template").replace({
+                    "userId": user["id"],
+                    "groupId": group["id"]
+                }).write("Dockerfile")
+            Print.ok()
+            Print.eol(2)
+
+            Print.info("Generating docker-compose file")
+            Template(f"{templatesPath}/docker-compose.yml.template").replace({
+                "projectUri": project["uri"],
+                "projectName": project["name"],
+                "serverRoot": server["root"],
+                "sslPath": ssl["path"],
+                "userId": user["id"],
+                "groupId": group["id"],
+                "databaseName": database["name"],
+                "databaseUsername": database["username"],
+                "databasePassword": database["password"]
+            }).write("docker-compose.yml")
+            Print.ok()
+            Print.eol(2)
+
+            Print.info("Generating the run binary")
+            Template(f"{templatesPath}/run.template").replace({
+                "userId": user["id"],
+                "groupId" group["id"],
+                "projectName": project["name"]
+            }).write("run")
+            os.chmod("run", os.stat("run").st_mode | stat.S_IEXEC)
+            Print.ok()
+            Print.eol(2)
+
+            Print.info("Pulling a fresh laravel application")
+            Print.eol(2)
+            with cd("application"):
+                run(["docker", "run", "--rm",
+                                      "--interactive",
+                                      "--tty",
+                                      "--user", f"{user['id']}:{group['id']}",
+                                      "--workdir", "/application",
+                                      "--mount", f"type=bind,source={os.getcwd()},target=/application",
+                                      "composer", "create-project", "--prefer-dist",
+                                                                    "--ignore-platform-reqs",
+                                                                    "laravel/laravel", project["name"]
+                ])
+            Print.eol()
+            Print.success("Pulled a fresh laravel application")
+            Print.eol(2)
+
+            Print.info("Initializing a git repository for project")
+            Git.init()
+            Print.ok()
+            Print.eol(2)
+
+            # Get the application key
+            with open(envFilePath) as envFile:
+                for line in envFile:
+                    if re.search("APP_KEY", line):
+                        applicationKey = re.findall("APP_KEY=(.*)", line.strip())[0]
+                        break
+
+            Template(f"{templatesPath}/env.template").replace({
+                "projectName": project["name"],
+                "applicationKey": applicationKey,
+                "projectUri": project["uri"],
+                "databaseName": database["name"],
+                "databaseUsername": database["username"],
+                "databasePassword": database["password"]
+            }).write(f"application/{project['name']}/.env")
