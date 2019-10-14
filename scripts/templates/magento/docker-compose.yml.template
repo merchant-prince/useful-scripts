@@ -1,0 +1,47 @@
+version: "3.7"
+
+services:
+    nginx:
+        image: nginx:latest
+        container_name: nginx
+        volumes:
+            - ./configuration/nginx/magento.local.conf:/etc/nginx/conf.d/magento.local.conf
+            - ./application/${projectName}:/var/www/html
+        ports:
+            - "80:80"
+        depends_on:
+            - php
+        networks:
+            - application
+
+    php:
+        build:
+            context: ./dockerfile/php
+        container_name: php
+        volumes:
+            - ./application/${projectName}:/var/www/html
+        depends_on:
+            - mysql
+        networks:
+            - application
+            - database
+
+    mysql:
+        image: mysql:5.7
+        container_name: mysql
+        volumes:
+            - database:/var/lib/mysql
+        environment:
+            MYSQL_USER: "${databaseUsername}"
+            MYSQL_PASSWORD: "${databasePassword}"
+            MYSQL_DATABASE: "${databaseName}"
+            MYSQL_RANDOM_ROOT_PASSWORD: 1
+        networks:
+            - database
+
+networks:
+    application:
+    database:
+
+volumes:
+    database:
