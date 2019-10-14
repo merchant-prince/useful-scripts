@@ -3,11 +3,14 @@ FROM php:fpm
 RUN apt-get update \
  && apt-get install -y libxml2-dev libmcrypt-dev \
                        libpng-dev libjpeg-dev libxslt1-dev \
-                       libzip-dev lsof \
- && docker-php-ext-configure gd --with-jpeg-dir=/usr/lib \
+                       libzip-dev libfreetype6-dev lsof cron \
+ && docker-php-ext-configure gd --with-jpeg-dir=/usr/lib/x86_64-linux-gnu \
+                                --with-freetype-dir=/usr/lib/x86_64-linux-gnu \
  && docker-php-ext-install bcmath gd intl mysqli opcache \
                            pdo_mysql soap xsl zip \
  && rm -rf /var/lib/apt/lists/*
+
+RUN service cron start
 
 RUN mv "$${PHP_INI_DIR}/php.ini-development" "$${PHP_INI_DIR}/php.ini"
 
