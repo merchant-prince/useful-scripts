@@ -1,4 +1,8 @@
-from .Color import Color
+from .Color import Color as ColorClass
+
+
+Color = ColorClass()
+
 
 class Print:
     """
@@ -9,43 +13,49 @@ class Print:
     def success(message):
         """Prints a coloured success message"""
 
-        print(Print.__line(Color.SUCCESS['HEADER'], "Success", Color.SUCCESS['MESSAGE'], message), end='')
+        print(Print.__line(Color.SUCCESS_BANNER, "Success", Color.SUCCESS_MESSAGE, message), end='')
 
     @staticmethod
     def info(message):
         """Prints a coloured info message"""
 
-        print(Print.__line(Color.INFO['HEADER'], "Info", Color.INFO['MESSAGE'], message), end='')
+        print(Print.__line(Color.INFO_BANNER, "Info", Color.INFO_MESSAGE, message), end='')
 
     @staticmethod
     def warning(message):
         """Prints a coloured warning message"""
 
-        print(Print.__line(Color.WARNING['HEADER'], "Warning", Color.WARNING['MESSAGE'], message), end='')
+        print(Print.__line(Color.WARNING_BANNER, "Warning", Color.WARNING_MESSAGE, message), end='')
 
     @staticmethod
     def error(message):
         """Prints a coloured error message"""
 
-        print(Print.__line(Color.ERROR['HEADER'], "Error", Color.ERROR['MESSAGE'], message), end='')
+        print(Print.__line(Color.ERROR_BANNER, "Error", Color.ERROR_MESSAGE, message), end='')
 
     @staticmethod
     def ok():
         """Prints a coloured ok message"""
 
-        print(f"{Color.OK} ...Ok {Color.RESET}", end='')
+        print(f"{Color.SUCCESS_MESSAGE} ...Ok {Color.RESET}", end='')
 
     @staticmethod
     def fail():
-        """Prints a coloured ok message"""
+        """Prints a coloured failure message"""
 
-        print(f"{Color.FAIL} ...Failed {Color.RESET}", end='')
+        print(f"{Color.ERROR_MESSAGE} ...Failed {Color.RESET}", end='')
 
     @staticmethod
     def eol(count=1):
         """Prints an end of line character"""
 
         print('\n' * count, end='')
+
+    @staticmethod
+    def __line(headerColor, header, messageColor, message):
+        """Returns a pretified line"""
+
+        return f"{Print.__header(headerColor, header)}{Print.__message(messageColor, message)}"
 
     @staticmethod
     def __header(color, header):
@@ -58,9 +68,3 @@ class Print:
         """Returns a pretty-string of the message"""
 
         return f"{color}\ue0b0 {message} {Color.RESET}"
-
-    @staticmethod
-    def __line(headerColor, header, messageColor, message):
-        """Returns a pretified line"""
-
-        return f"{Print.__header(headerColor, header)}{Print.__message(messageColor, message)}"

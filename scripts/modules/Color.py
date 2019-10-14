@@ -4,35 +4,62 @@ class Color:
     class.
     """
 
-    # Bright green
-    SUCCESS = {
-        "HEADER":  "\033[40;38;5;82m",
-        "MESSAGE": "\033[30;48;5;82m"
+    CODE = {
+            "RED_SINDOOR": 9,
+            "CHARTREUSE": 82,
+            "CYAN": 4,
+            "YELLOW": 220,
+            "RESET": 0
     }
 
-    # Cyan
-    INFO = {
-        "HEADER":  "\033[40;38;5;4m",
-        "MESSAGE": "\033[30;48;5;4m"
-    }
+    def __message(self, colorCode):
+        FOREGROUND = "40;38;5"
 
-    # Yellow
-    WARNING = {
-        "HEADER":  "\033[40;38;5;220m",
-        "MESSAGE": "\033[30;48;5;220m"
-    }
+        return f"{FOREGROUND};{colorCode}"
 
-    # Bright Red
-    ERROR = {
-        "HEADER":  "\033[40;38;5;9m",
-        "MESSAGE": "\033[30;48;5;9m"
-    }
+    def __banner(self, colorCode):
+        BACKGROUND = "30;48;5"
 
-    # Green
-    OK = "\033[32m"
+        return f"{BACKGROUND};{colorCode}"
 
-    # Red
-    FAIL = "\033[91m"
+    def __create(self, colorCode):
+        CSI = "\033["
+        END = "m"
 
-    # Reset color
-    RESET = "\033[0m"
+        return f"{CSI}{colorCode}{END}"
+
+    def __getattr__(self, name):
+        tokens = name.split("_")
+
+        if len(tokens) == 1:
+            if tokens[0] == "RESET":
+                return self.__create(Color.CODE["RESET"])
+
+        elif len(tokens) == 2:
+            colorType, displayType = tokens
+
+            if displayType == "BANNER":
+                if colorType == "SUCCESS":
+                    return self.__create(self.__banner(Color.CODE["CHARTREUSE"]))
+
+                if colorType == "INFO":
+                    return self.__create(self.__banner(Color.CODE["CYAN"]))
+
+                if colorType == "WARNING":
+                    return self.__create(self.__banner(Color.CODE["YELLOW"]))
+
+                if colorType == "ERROR":
+                    return self.__create(self.__banner(Color.CODE["RED_SINDOOR"]))
+
+            elif displayType == "MESSAGE":
+                if colorType == "SUCCESS":
+                    return self.__create(self.__message(Color.CODE["CHARTREUSE"]))
+
+                if colorType == "INFO":
+                    return self.__create(self.__message(Color.CODE["CYAN"]))
+
+                if colorType == "WARNING":
+                    return self.__create(self.__message(Color.CODE["YELLOW"]))
+
+                if colorType == "ERROR":
+                    return self.__create(self.__message(Color.CODE["RED_SINDOOR"]))

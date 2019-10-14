@@ -9,7 +9,6 @@ class cd:
     def __init__(self, newpath):
         self.oldpath = os.getcwd()
         self.newpath = newpath
-        self.pathdiff = os.path.relpath(self.oldpath, os.path.abspath(self.newpath))
 
     def __enter__(self):
         os.chdir(self.newpath)
