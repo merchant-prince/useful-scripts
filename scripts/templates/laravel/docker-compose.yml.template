@@ -6,8 +6,8 @@ services:
         container_name: nginx
         volumes:
             - ./configuration/nginx/${projectUri}.conf:/etc/nginx/conf.d/${projectUri}.conf
-            - ./application/${projectName}:${serverRoot}
-            - ./certificate/ssl:${sslPath}
+            - ./application/${projectName}:/var/www/html
+            - ./certificate/ssl:/etc/nginx/ssl
         ports:
             - "80:80"
             - "443:443"
@@ -25,7 +25,7 @@ services:
                 - GROUP_ID=${groupId}
         container_name: php
         volumes:
-            - ./application/${projectName}:${serverRoot}
+            - ./application/${projectName}:/var/www/html
         depends_on:
             - postgresql
             - redis

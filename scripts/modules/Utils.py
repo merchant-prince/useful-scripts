@@ -1,8 +1,6 @@
 import re
 import os
 
-from .Print import Print
-
 
 class Check:
     """
@@ -10,44 +8,22 @@ class Check:
     """
 
     def __init__(self, projectName):
-        self.projectName = projectName
+        self.project = {
+                "name": projectName
+        }
 
 
-    def projectName(self):
+    def nameIsPascalCased(self):
         """
-        Check the project name
+        Check if the project name is PascalCased
         """
 
-        Print.info("Checking project name")
-
-        projectNameIsPascalCased = bool(re.match('^[A-Z][a-z]+(?:[A-Z][a-z]+)*$', self.projectName))
-
-        if projectNameIsPascalCased:
-            Print.ok()
-            Print.eol(2)
-        else:
-            Print.fail()
-            Print.eol(2)
-            Print.error("The project name is not pascal-cased")
-            Print.eol()
-            sys.exit(1)
+        return bool(re.match('^[A-Z][a-z]+(?:[A-Z][a-z]+)*$', self.project["name"]))
 
 
-    def projectExistence():
+    def projectExists(self):
         """
         Check if a project with the same name already exists in the current directory
         """
 
-        Print.info("Checking project existence within current directory")
-
-        projectExists = os.path.isdir(projectName) if self.projectName in os.listdir() else False
-
-        if not projectExists:
-            Print.ok()
-            Print.eol(2)
-        else:
-            Print.fail()
-            Print.eol(2)
-            Print.error("Another project with the same name already exists in this directory")
-            Print.eol()
-            sys.exit(1)
+        return os.path.isdir(project["name"]) if self.project["name"] in os.listdir() else False

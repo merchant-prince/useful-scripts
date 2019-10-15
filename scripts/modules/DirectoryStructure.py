@@ -2,7 +2,6 @@ import os
 import collections
 
 from .cd import cd
-from .Print import Print
 
 
 class DirectoryStructure:
@@ -22,19 +21,9 @@ class DirectoryStructure:
               }
     """
     def __init__(self, structure):
-        Print.info("Checking directory structure")
-
         DirectoryStructure.__checkStructure(structure)
-
-        Print.ok()
-        Print.eol()
-
-        Print.info("Creating directory structure")
-
         DirectoryStructure.__createDirectory(structure)
 
-        Print.ok()
-        Print.eol()
 
     @staticmethod
     def __createDirectory(structure):
@@ -43,6 +32,7 @@ class DirectoryStructure:
 
             with cd(key):
                 DirectoryStructure.__createDirectory(value)
+
 
     @staticmethod
     def __checkStructure(dictionary):

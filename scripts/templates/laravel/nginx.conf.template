@@ -9,10 +9,10 @@ server {
     listen 443 ssl;
     server_name ${projectUri};
 
-    ssl_certificate ${sslCertPath};
-    ssl_certificate_key ${sslKeyPath};
+    ssl_certificate /etc/nginx/ssl/certificate.pem;
+    ssl_certificate_key /etc/nginx/ssl/key.pem;
 
-    root ${serverRoot}/public;
+    root /var/www/html/public;
 
     add_header X-Frame-Options "SAMEORIGIN";
     add_header X-XSS-Protection "1; mode=block";
@@ -32,7 +32,7 @@ server {
     error_page 404 /index.php;
 
     location ~ \.php$$ {
-        fastcgi_pass php:${phpFpmPort};
+        fastcgi_pass php:9000;
         fastcgi_index index.php;
         fastcgi_param SCRIPT_FILENAME $$realpath_root$$fastcgi_script_name;
         include fastcgi_params;

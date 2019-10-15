@@ -33,6 +33,8 @@ class Template:
         with open(self.templatePath) as template:
             self.templateContent = StringTemplate(template.read()).safe_substitute(variables)
 
+        return self
+
 
     def write(self, filename):
         """
@@ -47,6 +49,8 @@ class Template:
 
         with open(filename, "w") as file:
             file.write(str(self))
+
+        return self
 
 
     def __str__(self):

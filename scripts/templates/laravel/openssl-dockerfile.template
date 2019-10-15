@@ -4,8 +4,8 @@ FROM debian:$${TAG}
 
 RUN apt-get update && apt-get install -y openssl
 
-WORKDIR ${workingDirectory}
+WORKDIR /certificates
 
-VOLUME ${workingDirectory}
+VOLUME /certificates
 
 ENTRYPOINT ["openssl"]

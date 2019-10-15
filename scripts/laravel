@@ -1,12 +1,9 @@
 #! /usr/bin/env python
 
 
-"""
-Imports
-"""
-
-
+import re
 import os
+import sys
 import stat
 import argparse
 from subprocess import run
@@ -47,22 +44,8 @@ if __name__ == "__main__":
                 "id": os.getegid()
         }
 
-        ssl = {
-                "path": "/etc/nginx/ssl",
-                "key": "key.pem",
-                "cert": "cert.pem"
-        }
-
-        server = {
-                "root": "/var/www/html"
-        }
-
-        php = {
-                "port": 9000
-        }
-
         database = {
-                "name": "application",
+                "name": project["name"].lower(),
                 "username": "username",
                 "password": "password"
         }
@@ -73,12 +56,24 @@ if __name__ == "__main__":
         Run
         """
 
+        Print.eol()
+
         check = Check(project["name"])
 
-        check.projectName()
-        check.projectExistence()
+        Print.info("Checking base project criteria...")
+        Print.eol(2)
 
-        Print.info("Creating the directory structure of project")
+        if not check.nameIsPascalCased():
+            Print.error("The project name is not PascalCased")
+            Print.eol(2)
+            sys.exit(1)
+
+        if check.projectExists():
+            Print.error("Another project with the same name exists in the current directory")
+            Print.eol(2)
+            sys.exit(1)
+
+        Print.info("Creating the directory structure of the project")
         DirectoryStructure({
             project["name"]: {
                 "configuration": {
@@ -97,21 +92,15 @@ if __name__ == "__main__":
         Print.eol(2)
 
         Print.info("Going to the project root")
+        Print.eol(2)
         with cd(project["name"]):
             with cd("certificate/ssl"):
-                openssl = {
-                        "imageName": "harivansh/laravel-docker-openssl"
-                        "workingDirectory": "/certificates"
-                }
-
                 Print.info("Creating docker openssl image")
                 Print.eol(2)
-                run(["docker", "build", "--tag", openssl["imageName"],
+                run(["docker", "build", "--tag", "laravel-openssl",
                                         "-"
-                ], input=str(
-                    Template(f"{templatesPath}/openssl-dockerfile.template").replace({
-                        "workingDirectory": openssl["workingDirectory"]
-                })), encoding="ascii", check=True)
+                    ], input=str(Template(f"{templatesPath}/openssl-dockerfile.template").replace({
+                    })), encoding="ascii", check=True)
 
                 Print.eol()
                 Print.success("Created docker openssl image")
@@ -122,22 +111,22 @@ if __name__ == "__main__":
                 run(["docker", "run", "--rm",
                                       "--interactive",
                                       "--tty",
-                                      "--mount", f"type=bind,source={os.getcwd()},target={openssl['workingDirectory']}",
+                                      "--mount", f"type=bind,source={os.getcwd()},target=/certificates",
                                       "--user", f"{user['id']}:{group['id']}",
-                                      openssl["imageName"], "req", "-x509",
-                                                            "-newkey",
-                                                            "rsa:4096",
-                                                            "-keyout", ssl["key"],
-                                                            "-out", ssl["cert"],
-                                                            "-days", "365",
-                                                            "-nodes",
-                                                            "-sha256",
-                                                            "-subj", ("/C=MU"
-                                                                      "/ST=Pamplemousses"
-                                                                      "/L=Piton"
-                                                                      "/O=Redshift"
-                                                                      "/OU=IT"
-                                                                      f"/CN={project['uri']}")
+                                      "laravel-openssl", "req", "-x509",
+                                                         "-newkey",
+                                                         "rsa:4096",
+                                                         "-keyout", "key.pem",
+                                                         "-out", "certificate.pem",
+                                                         "-days", "365",
+                                                         "-nodes",
+                                                         "-sha256",
+                                                         "-subj", ("/C=MU"
+                                                                   "/ST=Pamplemousses"
+                                                                   "/L=Piton"
+                                                                   "/O=Redshift"
+                                                                   "/OU=IT"
+                                                                   f"/CN={project['uri']}")
                 ], check=True)
                 Print.eol()
                 Print.success("SSL certificates generated")
@@ -146,11 +135,7 @@ if __name__ == "__main__":
             Print.info("Generating the nginx configuration file")
             with cd("configuration/nginx"):
                 Template(f"{templatesPath}/nginx.conf.template").replace({
-                    "projectUri": project["uri"],
-                    "sslCertPath": f"{ssl['path']}/{ssl['cert']}",
-                    "sslKeyPath": f"{ssl['path']}/{ssl['key']}",
-                    "serverRoot": server["root"],
-                    "phpFpmPort": php["port"]
+                    "projectUri": project["uri"]
                 }).write(f"{project['uri']}.conf")
             Print.ok()
             Print.eol(2)
@@ -168,8 +153,6 @@ if __name__ == "__main__":
             Template(f"{templatesPath}/docker-compose.yml.template").replace({
                 "projectUri": project["uri"],
                 "projectName": project["name"],
-                "serverRoot": server["root"],
-                "sslPath": ssl["path"],
                 "userId": user["id"],
                 "groupId": group["id"],
                 "databaseName": database["name"],
@@ -182,7 +165,7 @@ if __name__ == "__main__":
             Print.info("Generating the run binary")
             Template(f"{templatesPath}/run.template").replace({
                 "userId": user["id"],
-                "groupId" group["id"],
+                "groupId": group["id"],
                 "projectName": project["name"]
             }).write("run")
             os.chmod("run", os.stat("run").st_mode | stat.S_IEXEC)
@@ -206,13 +189,15 @@ if __name__ == "__main__":
             Print.success("Pulled a fresh laravel application")
             Print.eol(2)
 
+            Print.eol(1)
             Print.info("Initializing a git repository for project")
             Git.init()
-            Print.ok()
+            Print.eol(2)
+            Print.success("Initialized a git repository for project")
             Print.eol(2)
 
             # Get the application key
-            with open(envFilePath) as envFile:
+            with open(f"application/{project['name']}/.env") as envFile:
                 for line in envFile:
                     if re.search("APP_KEY", line):
                         applicationKey = re.findall("APP_KEY=(.*)", line.strip())[0]
@@ -226,3 +211,6 @@ if __name__ == "__main__":
                 "databaseUsername": database["username"],
                 "databasePassword": database["password"]
             }).write(f"application/{project['name']}/.env")
+
+            Print.success(f"Your project is now available at: https://{project['uri']}")
+            Print.eol(2)
