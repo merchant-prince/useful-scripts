@@ -89,8 +89,7 @@ if __name__ == "__main__":
             Print.eol(2)
             with cd(f"application/{project['name']}"):
                 process = Popen(["docker", "run", "--rm",
-                                                  "--workdir", "/application",
-                                                  "--mount", f"type=bind,source={os.getcwd()},target=/application",
+                                                  "--mount", f"type=bind,source={os.getcwd()},target=/var/www/html",
                                                   "wordpress"
                                 ], stdout=PIPE, stderr=STDOUT, bufsize=1, universal_newlines=True)
 
