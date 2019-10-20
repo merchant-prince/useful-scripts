@@ -33,7 +33,7 @@ if __name__ == "__main__":
 
         project = {
                 "name": arguments.name,
-                "uri": "dev.local"
+                "uri": "laravel.local"
         }
 
         user = {
@@ -190,7 +190,8 @@ if __name__ == "__main__":
             Print.eol(2)
 
             Print.eol(1)
-            Print.info("Initializing a git repository for project")
+            Print.info("Initializing a git repository for the project")
+            Print.eol(2)
             Git.init()
             Print.eol(2)
             Print.success("Initialized a git repository for project")
