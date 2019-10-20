@@ -48,6 +48,8 @@ if __name__ == "__main__":
         templatesPath = f"{os.path.dirname(os.path.realpath(__file__))}/templates/wordpress"
 
         Print.eol()
+        Print.info("Doing preliminary checks...")
+        Print.eol(2)
 
         check = Check(project["name"])
 

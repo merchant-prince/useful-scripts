@@ -122,8 +122,6 @@ if __name__ == "__main__":
             Print.eol(2)
             with cd("application"):
                 run(["sudo", "setfacl", "-R", "-m", f"u:{user['name']}:rwx", f"{os.getcwd()}/{project['name']}"])
-            Print.info("Setting ACLs on the Prestashop application files")
-            Print.eol(2)
             Print.success("ACLs set on the Prestashop application files")
             Print.eol(2)
 

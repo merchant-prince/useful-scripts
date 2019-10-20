@@ -2,204 +2,143 @@
 
 
 import os
+import sys
 import getpass
 import argparse
-from string import Template
-from subprocess import run
+from subprocess import run, Popen, PIPE, STDOUT
 
 from modules.cd import cd
+from modules.Git import Git
 from modules.Print import Print
-from modules.Utils import check_project_name, check_project_existence
-
-
-
-
-"""
-Variables
-"""
-
-
-project = {
-        "name": None,
-        "uri": "magento.local",
-        "port": 80
-}
-
-database = {
-        "name": "magento",
-        "username": "user",
-        "password": "password"
-}
-
-user = {
-        "id": os.geteuid(),
-        "name": getpass.getuser()
-}
-
-group = {
-        "id": os.getegid()
-}
-
-templatesPath = f"{os.path.dirname(os.path.realpath(__file__))}/templates/magento"
-
-
-
-
-"""
-Installation
-"""
-
-
-def create_directory_structure():
-    Print.info("Creating the directory structure of the project")
-
-    os.mkdir(project["name"])
-
-    with cd(project["name"]):
-        os.mkdir("application")
-
-        with cd("application"):
-            os.mkdir(project["name"])
-
-        os.mkdir("configuration")
-
-        with cd("configuration"):
-            os.mkdir("nginx")
-
-        os.mkdir("dockerfile")
-
-        with cd("dockerfile"):
-            os.mkdir("php")
-
-    Print.ok()
-    Print.eol(2)
-
-
-def goto_project_root():
-    Print.info("Going to project root")
-
-    os.chdir(project["name"])
-
-    Print.ok()
-    Print.eol(2)
-
-
-
-
-def create_docker_compose_file():
-    dockerComposeTemplateName = "docker-compose.yml.template"
-    dockerComposeFileContent = None
-
-    with open(f"{templatesPath}/{dockerComposeTemplateName}") as dockerComposeTemplate:
-        dockerComposeFileContent = Template(dockerComposeTemplate.read()).safe_substitute(
-                projectName=project["name"],
-                databaseName=database["name"],
-                databaseUsername=database["username"],
-                databasePassword=database["password"]
-        )
-
-    Print.info("Generating docker-compose file")
-
-    with open("docker-compose.yml", "w") as dockerComposeFile:
-        dockerComposeFile.write(dockerComposeFileContent)
-
-    Print.ok()
-    Print.eol(2)
-
-
-
-
-def create_php_dockerfile():
-    dockerfileTemplateName = "php-dockerfile.template"
-    dockerfileContent = None
-
-    with open(f"{templatesPath}/{dockerfileTemplateName}") as dockerfileTemplate:
-        dockerfileContent = Template(dockerfileTemplate.read()).safe_substitute(
-                userId=user["id"],
-                groupId=group["id"]
-        )
-
-    Print.info("Generating PHP dockerfile")
-
-    with cd("dockerfile/php"):
-        with open("Dockerfile", "w") as dockerfile:
-            dockerfile.write(dockerfileContent)
-
-    Print.ok()
-    Print.eol(2)
-
-
-
-
-def create_nginx_configuration_file():
-    nginxConfigurationTemplateName = "magento.local.conf.template"
-    nginxConfigurationContent = None
-
-    with open(f"{templatesPath}/{nginxConfigurationTemplateName}") as nginxConfigurationTemplate:
-        nginxConfigurationContent = Template(nginxConfigurationTemplate.read()).safe_substitute()
-
-    Print.info("Generating nginx configuration file")
-
-    with cd("configuration/nginx"):
-        with open("magento.local.conf", "w") as nginxConfigurationFile:
-            nginxConfigurationFile.write(nginxConfigurationContent)
-
-    Print.ok()
-    Print.eol(2)
-
-
-
-
-"""
-Post-Installation
-"""
-
-
-def initialize_git_repository_for_project():
-    Print.info("Initializing git repository for project")
-    Print.eol(2)
-
-    with cd(f"application/{project['name']}"):
-        run(["git", "init"])
-        run(["git", "add", "."])
-        run(["git", "commit", "-m", "initial commit"])
-        run(["git", "checkout", "-b", "development"])
-
-    Print.eol(2)
-    Print.success("Initialized git repository for project")
-    Print.eol(2)
-
-
+from modules.Utils import Check
+from modules.Template import Template
+from modules.DirectoryStructure import DirectoryStructure
 
 
 if __name__ == "__main__":
+
     parser = argparse.ArgumentParser(description="A script the automate the installation of a Magento project.")
-
     subparsers = parser.add_subparsers(dest="actions")
-
     new_command = subparsers.add_parser("new", help="Install a new Magento application in the current directory")
+
     new_command.add_argument("name", help="The project name (should be PascalCased)")
 
     arguments = parser.parse_args()
 
     if arguments.actions == "new":
-        project["name"] = arguments.name
 
-        check_project_name(project["name"])
-        check_project_existence(project["name"])
+        """
+        Variables
+        """
 
-        create_directory_structure()
+        project = {
+                "name": arguments.name,
+                "uri": "magento.local",
+                "port": 80
+        }
 
-        goto_project_root()
+        database = {
+                "name": "magento",
+                "username": "user",
+                "password": "password"
+        }
 
-        create_docker_compose_file()
-        create_php_dockerfile()
-        create_nginx_configuration_file()
+        user = {
+                "id": os.geteuid(),
+                "name": getpass.getuser()
+        }
 
-        initialize_git_repository_for_project()
+        group = {
+                "id": os.getegid()
+        }
 
-#        Print.eol(2)
-#        Print.warning(f"Your project is owned by 'http'. Run:  'sudo setfacl -R -m u:{user['name']}:rwx ./application/{project['name']}/*'  after the first run.")
-#        Print.eol(2)
-#        Print.success(f"Your project will be available at: http://{project['uri']}{'' if project['port'] == 80 else ':' + str(project['port'])}")
-#        Print.eol(2)
+        templatesPath = f"{os.path.dirname(os.path.realpath(__file__))}/templates/magento"
+        configurationsPath = f"{os.path.dirname(os.path.realpath(__file__))}/configurations/magento"
+
+        """
+        Run
+        """
+
+        check = Check(project["name"])
+
+        Print.eol()
+
+        Print.info("Doing preliminary checks...")
+        Print.eol(2)
+
+        if not check.nameIsPascalCased():
+            Print.error("The project name is not PascalCased")
+            Print.eol(2)
+            sys.exit(1)
+
+        if check.projectExists():
+            Print.error("Another project with the same name exists in the current directory")
+            Print.eol(2)
+            sys.exit(1)
+
+        Print.info("Creating the directory structure of the project")
+        DirectoryStructure({
+            project["name"]: {
+                "application": {},
+                "configuration": {
+                    "nginx": {}
+                },
+                "dockerfile": {
+                    "php": {}
+                }
+            }
+        })
+        Print.ok()
+        Print.eol(2)
+
+        with cd(project["name"]):
+            Print.info("Generating docker-compose file")
+            Template(f"{templatesPath}/docker-compose.yml.template").replace({
+                "projectName": project["name"],
+                "databaseName": database["name"],
+                "databaseUsername": database["username"],
+                "databasePassword": database["password"]
+            }).write("docker-compose.yml")
+            Print.ok()
+            Print.eol(2)
+
+            Print.info("Generating PHP dockerfile")
+            with cd("dockerfile/php"):
+                Template(f"{templatesPath}/php-dockerfile.template").replace({
+                    "userId": user["id"],
+                    "groupId": group["id"]
+                }).write("Dockerfile")
+            Print.ok()
+            Print.eol(2)
+
+            Print.info("Generating nginx configuration file")
+            with cd("configuration/nginx"):
+                Template(f"{templatesPath}/nginx.conf.template").replace({
+                }).write(f"{project['uri']}.conf")
+            Print.ok()
+            Print.eol(2)
+
+            Print.info("Getting a fresh Magento application")
+            Print.eol(2)
+            with cd("application"):
+                run(["docker", "run", "--rm",
+                                      "--user", f"{user['id']}:{group['id']}",
+                                      "--mount", f"type=bind,source={configurationsPath}/auth.json,target=/tmp/auth.json",
+                                      "--mount", f"type=bind,source={os.getcwd()},target=/app",
+                                      "composer", "create-project", "--ignore-platform-reqs",
+                                                                    "--repository", "https://repo.magento.com/",
+                                                                    "magento/project-community-edition",
+                                                                    project["name"]])
+            Print.eol(2)
+            Print.success("Got a fresh Magento application")
+            Print.eol(2)
+
+            Print.info("Initializing a git repository for the project")
+            Print.eol(2)
+            Git.init()
+            Print.eol(2)
+            Print.success("Initialized a git repository for the project")
+            Print.eol(2)
+
+        Print.success(f"Your project will be available at: http://{project['uri']}{'' if project['port'] == 80 else ':' + str(project['port'])}")
+        Print.eol(2)
