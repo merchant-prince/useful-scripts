@@ -27,20 +27,28 @@ class DirectoryStructure:
 
     @staticmethod
     def __createDirectory(structure):
-        for key, value in structure.items():
-            os.mkdir(key)
+        """
+        This method needs to be static so that we can pass the leaves of the
+        structure to itself recursively.
+        """
+        for directoryName, directoryContent in structure.items():
+            os.mkdir(directoryName)
 
-            with cd(key):
-                DirectoryStructure.__createDirectory(value)
+            with cd(directoryName):
+                DirectoryStructure.__createDirectory(directoryContent)
 
 
     @staticmethod
     def __checkStructure(dictionary):
+        """
+        This method needs to be static so that we can pass the leaves of the
+        dictionary to itself recursively.
+        """
         if not isinstance(dictionary, collections.Mapping):
             raise ValueError("The directory structure provided is ill-formed")
 
-        for key, value in dictionary.items():
-            if isinstance(value, collections.Mapping):
-                DirectoryStructure.__checkStructure(value)
+        for directoryName, directoryContent in dictionary.items():
+            if isinstance(directoryContent, collections.Mapping):
+                DirectoryStructure.__checkStructure(directoryContent)
             else:
                 raise ValueError("The directory structure provided is ill-formed")
