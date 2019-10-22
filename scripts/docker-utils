@@ -1,0 +1,223 @@
+#! /usr/bin/env python
+
+
+import sys
+import argparse
+from subprocess import run, Popen, PIPE, STDOUT
+
+from modules.Print import Print
+
+
+class Commands:
+    MAIN = {
+            "CONTAINERS": ["docker", "container"],
+            "IMAGES": ["docker", "image"],
+            "VOLUMES": ["docker", "volume"],
+            "NETWORKS": ["docker", "network"]
+    }
+
+    OPTIONS = {
+            "ALL": "--all",
+            "QUIET": "--quiet",
+            "FORCE": "--force",
+            "VOLUMES": "--volumes",
+    }
+
+    @staticmethod
+    def list(command, options=[]):
+        if (command not in Commands.MAIN.keys()) or (options and not set(options).issubset(set(Commands.OPTIONS.keys()))):
+            raise RuntimeError("The command and/or options-list provided is incorrect")
+
+        finalCommand = Commands.MAIN[command].copy()
+
+        finalCommand.append("ls")
+
+        for option in options:
+            finalCommand.append(Commands.OPTIONS[option])
+
+        return finalCommand
+
+    @staticmethod
+    def remove(command, options=[], ids=[]):
+        if (command not in Commands.MAIN.keys()) or (options and not set(options).issubset(set(Commands.OPTIONS.keys()))):
+            raise RuntimeError("The command and/or options-list provided is incorrect")
+
+        finalCommand = Commands.MAIN[command].copy()
+
+        finalCommand.append("rm")
+
+        for option in options:
+            finalCommand.append(Commands.OPTIONS[option])
+
+        for containerId in ids:
+            finalCommand.append(containerId)
+
+        return finalCommand
+
+
+
+
+class Utils:
+    @staticmethod
+    def getIds(command):
+        return [containerId.strip() for containerId in Popen(command,
+                                                             stdout=PIPE,
+                                                             stderr=STDOUT,
+                                                             bufsize=1,
+                                                             universal_newlines=True).stdout]
+
+    @staticmethod
+    def has(command):
+        return bool(Utils.getIds(command))
+
+
+
+
+class View:
+    def __getattr__(self, commandName):
+        if commandName == "CONTAINERS":
+            Print.info("Checking containers...")
+            Print.eol(2)
+
+            if Utils.has(Commands.list(commandName, ["ALL", "QUIET"])):
+                run(Commands.list(commandName, ["ALL"]))
+                Print.eol(2)
+            else:
+                Print.success("No containers present on the machine!")
+                Print.eol(2)
+
+        elif commandName == "IMAGES":
+            Print.info("Checking images...")
+            Print.eol(2)
+
+            if Utils.has(Commands.list(commandName, ["ALL", "QUIET"])):
+                run(Commands.list(commandName, ["ALL"]))
+                Print.eol(2)
+            else:
+                Print.success("No images present of the machine!")
+                Print.eol(2)
+
+        elif commandName == "VOLUMES":
+            Print.info("Checking volumes...")
+            Print.eol(2)
+
+            if Utils.has(Commands.list(commandName, ["QUIET"])):
+                run(Commands.list(commandName))
+                Print.eol(2)
+            else:
+                Print.success("No volumes present on the machine!")
+                Print.eol(2)
+
+        elif commandName == "NETWORKS":
+            Print.info("Checking networks...")
+            Print.eol(2)
+
+            if Utils.has(Commands.list(commandName, ["QUIET"])):
+                run(Commands.list(commandName))
+                Print.eol(2)
+            else:
+                Print.success("No networks present on the machine!")
+                Print.eol(2)
+
+
+
+
+class Remove:
+    def __getattr__(self, commandName):
+        if commandName == "CONTAINERS":
+            Print.warning("Removing containers...")
+            Print.eol(2)
+
+            containersIds = Utils.getIds(Commands.list(commandName, ["ALL", "QUIET"]))
+
+            if containersIds:
+                run(Commands.remove(commandName, ["FORCE", "VOLUMES"], containersIds))
+                Print.eol(2)
+                Print.success("Containers removed!")
+                Print.eol(2)
+            else:
+                Print.success("No containers present on the machine!")
+                Print.eol(2)
+
+        elif commandName == "IMAGES":
+            Print.warning("Removing images...")
+            Print.eol(2)
+
+            imagesIds = Utils.getIds(Commands.list(commandName, ["ALL", "QUIET"]))
+
+            if imagesIds:
+                run(Commands.remove(commandName, ["FORCE"], imagesIds))
+                Print.eol(2)
+                Print.success("Images removed!")
+                Print.eol(2)
+            else:
+                Print.success("No images present on the machine!")
+                Print.eol(2)
+
+        elif commandName == "VOLUMES":
+            Print.warning("Removing volumes...")
+            Print.eol(2)
+
+            volumesNames = Utils.getIds(Commands.list(commandName, ["QUIET"]))
+
+            if volumesNames:
+                run(Commands.remove(commandName, ["FORCE"], volumesNames))
+                Print.eol(2)
+                Print.success("Volumes removed!")
+                Print.eol(2)
+            else:
+                Print.success("No volumes present on the machine!")
+                Print.eol(2)
+
+        elif commandName == "NETWORKS":
+            Print.warning("Removing networks...")
+            Print.eol(2)
+
+            networksIds = Utils.getIds(Commands.list(commandName, ["QUIET"]))
+
+            if networksIds:
+                run(Commands.remove(commandName, [], networksIds))
+                Print.eol(2)
+                Print.success("Networks removed!")
+                Print.eol(2)
+            else:
+                Print.success("No networks present on the machine!")
+                Print.eol(2)
+
+
+class Docker:
+    def __init__(self):
+        self.view = View()
+        self.remove = Remove()
+
+    def status(self):
+        Print.eol()
+
+        self.view.CONTAINERS
+        self.view.IMAGES
+        self.view.VOLUMES
+        self.view.NETWORKS
+
+    def purge(self):
+        Print.eol()
+
+        self.remove.CONTAINERS
+        self.remove.IMAGES
+        self.remove.VOLUMES
+        self.remove.NETWORKS
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="A script to check the status of, and remove docker containers, images, volumes, and networks.")
+
+    parser.add_argument("action", choices=["status", "purge"], help="The action to be carried out by the script")
+
+    arguments = parser.parse_args()
+
+    docker = Docker()
+
+    if arguments.action == "status":
+        docker.status()
+
+    elif arguments.action == "purge":
+        docker.purge()
