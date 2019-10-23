@@ -1,0 +1,94 @@
+#! /usr/bin/env python
+
+import os
+import argparse
+from subprocess import Popen, PIPE
+
+from modules.Print import Print
+
+
+class Import:
+    def fromFile(self, filepath):
+        if not os.path.isfile(filepath):
+            raise RuntimeError(f"The file at {filepath} does not exist.")
+
+        with open(filepath) as passwordFile:
+            credentials = dict([tuple(item.split()) for item in passwordFile.read().splitlines()])
+
+        for path, password in credentials.items():
+            with Popen(["pass", "insert", "--echo", path], stdin=PIPE) as process:
+                process.communicate(input=password.encode("utf-8"))
+
+
+class Export:
+    def __init__(self):
+        self.passwordStorePath = f"{os.getenv('HOME')}/.password-store"
+        self.gpgFileExtension = ".gpg"
+
+    def getGpgFilesPath(self):
+        return [path.lstrip(self.passwordStorePath).rstrip(f"{self.gpgFileExtension}\n")
+                for path in
+                    Popen(["find", self.passwordStorePath, "-name", f"*{self.gpgFileExtension}"],
+                          stdout=PIPE,
+                          bufsize=1,
+                          universal_newlines=True).stdout]
+
+    def getPassword(self, path):
+        return [password.strip() for password in Popen(["pass", path],
+                                                       stdout=PIPE,
+                                                       bufsize=1,
+                                                       universal_newlines=True).stdout][0]
+
+    def getCredentials(self):
+        return {path:self.getPassword(path) for path in self.getGpgFilesPath()}
+
+    def toFile(self, filepath):
+        if os.path.isfile(filepath):
+            raise RuntimeError(f"Another password file exists at: {self.passwordFilePath}. Please delete it before continuing")
+
+        with open(filepath, "w") as passwordFile:
+            for path, password in self.getCredentials().items():
+                passwordFile.write(f"{path} {password}\n")
+
+
+class Pass:
+    def __init__(self, filepath):
+        self.importer = Import()
+        self.exporter = Export()
+        self.filepath = filepath
+
+    def importPasswords(self):
+        self.importer.fromFile(self.filepath)
+
+    def exportPasswords(self):
+        self.exporter.toFile(self.filepath)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="A script to import, and export pass's passwords through cleartext files.")
+
+    parser.add_argument("action", choices=["import", "export"], help="The action to be carried out by the script.")
+    parser.add_argument("--filepath", default=f"{os.getenv('HOME')}/Downloads/PASSWORD_FILE.bak", help="The full-path of the file to import passwords from, or export passwords to.")
+
+    arguments = parser.parse_args()
+
+    pass_ = Pass(arguments.filepath)
+
+    if arguments.action == "import":
+        Print.info(f"Importing passwords from: {arguments.filepath}")
+        Print.eol(2)
+
+        pass_.importPasswords()
+
+        Print.eol(2)
+        Print.success(f"Passwords imported from: {arguments.filepath}")
+        Print.eol(2)
+
+    elif arguments.action == "export":
+        Print.info(f"Exporting passwords to: {arguments.filepath}")
+
+        pass_.exportPasswords()
+
+        Print.eol(2)
+        Print.success(f"Passwords saved to: {arguments.filepath}")
+        Print.eol(2)
