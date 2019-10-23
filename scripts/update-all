@@ -1,59 +1,45 @@
-#! /usr/bin/env zsh
-
-##
-# Description:
-#   This script is used to upgrade all the packages on the system
-##
+#! /usr/bin/env python
 
 
-# Functions
-function usage()
-{
-  echo ""
-  echo "usage: `basename ${1}` [-r|--refresh]"
-  echo ""
-}
+import argparse
+from subprocess import run
+
+from modules.Print import Print
 
 
-# Refresh pacman mirrors
-if [[ ${#} -eq 0 ]]
-then
-  # do nothing
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="A script to update the system.")
 
-elif [[ ${#} -eq 1 ]]
-then
-  if [[ ${1} = "-r" ]] || [[ ${1} = "--refresh" ]]
-  then
-    echo ""
-    echo "** Refreshing pacman mirrors **"
-    echo ""
+    parser.add_argument("--refresh", action="store_true", help="Refresh the pacman mirrors.")
 
-    sudo pacman-mirrors -f
+    arguments = parser.parse_args()
 
-  else
-    usage ${0}
+    if arguments.refresh:
+        Print.info("Refreshing the pacman mirrors.")
+        Print.eol(2)
 
-    exit 1
-  fi
+        run(["sudo", "pacman-mirrors", "-f"])
 
-else
-  usage ${0}
-
-  exit 2
-fi
+        Print.eol(2)
+        Print.success("Refreshed the pacman mirrors.")
+        Print.eol(2)
 
 
-# Upgrade pacman packages
-echo ""
-echo "** Upgrading Pacman packages **"
-echo ""
+    Print.info("Upgrading pacman's packages.")
+    Print.eol(2)
 
-sudo pacman -Syyu
+    run(["sudo", "pacman", "-Syyu"])
+
+    Print.eol(2)
+    Print.success("Upgraded pacman's packages.")
+    Print.eol(2)
 
 
-# Upgrade the AUR packages
-echo ""
-echo "** Upgrading AUR packages **"
-echo ""
+    Print.info("Upgrading AUR's packages.")
+    Print.eol(2)
 
-yaourt -Syyua
+    run(["yaourt", "-Syuua"])
+
+    Print.eol(2)
+    Print.success("Upgraded AUR's packages.")
+    Print.eol(2)
