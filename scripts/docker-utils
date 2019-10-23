@@ -3,30 +3,75 @@
 
 import sys
 import argparse
-from subprocess import run, Popen, PIPE, STDOUT
+from subprocess import run, Popen, PIPE
 
 from modules.Print import Print
 
 
+
+
 class Commands:
+    """
+    This class is used to create docker commands
+    """
+
     MAIN = {
             "CONTAINERS": ["docker", "container"],
-            "IMAGES": ["docker", "image"],
-            "VOLUMES": ["docker", "volume"],
-            "NETWORKS": ["docker", "network"]
+            "IMAGES"    : ["docker", "image"],
+            "VOLUMES"   : ["docker", "volume"],
+            "NETWORKS"  : ["docker", "network"]
     }
 
     OPTIONS = {
-            "ALL": "--all",
-            "QUIET": "--quiet",
-            "FORCE": "--force",
-            "VOLUMES": "--volumes",
+            "ALL"    : "--all",
+            "QUIET"  : "--quiet",
+            "FORCE"  : "--force",
+            "VOLUMES": "--volumes"
     }
 
     @staticmethod
-    def list(command, options=[]):
+    def checkCommandsAndOptions(command, options):
+        """
+        Checks if the command, and options exist in the MAIN,
+        and OPTIONS dictionaries.
+
+        Arguments:
+        ----------
+
+        command: string
+            One of the keys of the MAIN dictionary
+            e.g.: "VOLUMES"
+
+        options: array<string>
+            An array of the keys present in the OPTIONS dictionary
+            e.g.: ["ALL", "FORCE"]
+        """
+
         if (command not in Commands.MAIN.keys()) or (options and not set(options).issubset(set(Commands.OPTIONS.keys()))):
             raise RuntimeError("The command and/or options-list provided is incorrect")
+
+    @staticmethod
+    def list(command, options=[]):
+        """
+        Creates a command to list docker containers, images, volumes,
+        or networks.
+
+        Arguments:
+        ----------
+
+        command: string
+            One of the keys of the MAIN dictionary
+            e.g.: "VOLUMES"
+
+        options: array<string>
+            An array of the keys present in the OPTIONS dictionary
+            e.g.: ["ALL", "FORCE"]
+
+        Return: array<sring>
+        -------
+        """
+
+        Commands.checkCommandsAndOptions(command, options)
 
         finalCommand = Commands.MAIN[command].copy()
 
@@ -39,8 +84,31 @@ class Commands:
 
     @staticmethod
     def remove(command, options=[], ids=[]):
-        if (command not in Commands.MAIN.keys()) or (options and not set(options).issubset(set(Commands.OPTIONS.keys()))):
-            raise RuntimeError("The command and/or options-list provided is incorrect")
+        """
+        Creates a command to remove docker containers, images, volumes,
+        or networks.
+
+        Arguments:
+        ----------
+
+        command: string
+            One of the keys of the MAIN dictionary
+            e.g.: "VOLUMES"
+
+        options: array<string>
+            An array of the keys present in the OPTIONS dictionary
+            e.g.: ["ALL", "FORCE"]
+
+        ids: array<string>
+            An array of the id of containers, images, networks, and volumes to
+            remove.
+            e.g.: ["oedldf234d", "eudj3ser23", "5efs3s2sr5"]
+
+        Return: array<sring>
+        -------
+        """
+
+        Commands.checkCommandsAndOptions(command, options)
 
         finalCommand = Commands.MAIN[command].copy()
 
@@ -59,21 +127,55 @@ class Commands:
 
 class Utils:
     @staticmethod
-    def getIds(command):
-        return [containerId.strip() for containerId in Popen(command,
+    def getIds(listCommand):
+        """
+        Gets the Ids of containers, images, networks, and volumes from a list
+        command.
+
+        Arguments:
+        ----------
+
+        listCommand: array<string>
+            A command created using (or similar to) Commands.list(...)
+            e.g.: ["docker", "image", "ls", "--all", "--quiet"]
+
+        Return: array<sring>
+        -------
+        """
+
+        return [containerId.strip() for containerId in Popen(listCommand,
                                                              stdout=PIPE,
-                                                             stderr=STDOUT,
                                                              bufsize=1,
                                                              universal_newlines=True).stdout]
 
     @staticmethod
-    def has(command):
-        return bool(Utils.getIds(command))
+    def has(listCommand):
+        """
+        A convenience method to check if a list command returns any containers,
+        images, networks, or volumes Ids.
+
+        Arguments:
+        ----------
+
+        listCommand: array<string>
+            A command created using (or similar to) Commands.list(...)
+            e.g.: ["docker", "image", "ls", "--all", "--quiet"]
+
+        Return: array<sring>
+        -------
+        """
+
+        return bool(Utils.getIds(listCommand))
 
 
 
 
 class View:
+    """
+    A convenience meta-class used to list the ids of containers, images,
+    volumes, or networks.
+    """
+
     def __getattr__(self, commandName):
         if commandName == "CONTAINERS":
             Print.info("Checking containers...")
@@ -123,6 +225,11 @@ class View:
 
 
 class Remove:
+    """
+    A convenience meta-class used to remove the ids of containers, images,
+    volumes, or networks.
+    """
+
     def __getattr__(self, commandName):
         if commandName == "CONTAINERS":
             Print.warning("Removing containers...")
@@ -185,7 +292,13 @@ class Remove:
                 Print.eol(2)
 
 
+
+
 class Docker:
+    """
+    A meta-class to encapsulate the above classes
+    """
+
     def __init__(self):
         self.view = View()
         self.remove = Remove()
@@ -205,6 +318,8 @@ class Docker:
         self.remove.IMAGES
         self.remove.VOLUMES
         self.remove.NETWORKS
+
+
 
 
 if __name__ == "__main__":

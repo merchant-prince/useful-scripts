@@ -1,5 +1,6 @@
 #! /usr/bin/env python
 
+
 import os
 import argparse
 from subprocess import Popen, PIPE
@@ -8,7 +9,24 @@ from modules.Print import Print
 
 
 class Import:
+    """
+    A class for importing credentials from a cleartext file.
+    """
+
     def fromFile(self, filepath):
+        """
+        Import the credentials into pass from a cleartext file.
+
+        Arguments:
+        ----------
+
+        filepath: string
+            The path to the file which contains the credentials
+            (exported from pass).
+
+            e.g.: /home/foo/bar/PASSWORD_FILE.bak
+        """
+
         if not os.path.isfile(filepath):
             raise RuntimeError(f"The file at {filepath} does not exist.")
 
@@ -21,11 +39,17 @@ class Import:
 
 
 class Export:
+    """
+    A class for exporting credentials from pass to a cleartext file.
+    """
+
     def __init__(self):
         self.passwordStorePath = f"{os.getenv('HOME')}/.password-store"
         self.gpgFileExtension = ".gpg"
 
     def getGpgFilesPath(self):
+        """Get an array of all the GPG files"""
+
         return [path.lstrip(self.passwordStorePath).rstrip(f"{self.gpgFileExtension}\n")
                 for path in
                     Popen(["find", self.passwordStorePath, "-name", f"*{self.gpgFileExtension}"],
@@ -34,15 +58,48 @@ class Export:
                           universal_newlines=True).stdout]
 
     def getPassword(self, path):
+        """
+        Get the password of the associated path from pass
+
+        Arguments:
+        ----------
+
+        path: string
+            The password's path in pass
+            e.g.: Foo/Bar/username/password
+
+        Return: string
+        -------
+        """
+
         return [password.strip() for password in Popen(["pass", path],
                                                        stdout=PIPE,
                                                        bufsize=1,
                                                        universal_newlines=True).stdout][0]
 
     def getCredentials(self):
+        """
+        Get the credentials from pass in the form of {"username": "password", ...}
+
+        Return: dictionary<string:string>
+        -------
+        """
+
         return {path:self.getPassword(path) for path in self.getGpgFilesPath()}
 
     def toFile(self, filepath):
+        """
+        The path to the file which will contain the credentials in cleartext.
+
+        Arguments:
+        ----------
+
+        filepath: string
+            The path to the file
+
+            e.g.: /home/foo/bar/PASSWORD_FILE.bak
+        """
+
         if os.path.isfile(filepath):
             raise RuntimeError(f"Another password file exists at: {self.passwordFilePath}. Please delete it before continuing")
 
@@ -52,6 +109,11 @@ class Export:
 
 
 class Pass:
+    """
+    A convenience meta-class to encapsulate the import, and export
+    functionality.
+    """
+
     def __init__(self, filepath):
         self.importer = Import()
         self.exporter = Export()

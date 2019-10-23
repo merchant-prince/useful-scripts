@@ -7,9 +7,9 @@ class Template:
 
     Attributes
     ----------
-    templatePath:
+    templatePath: string
         The path of the template to read
-    templateContent:
+    templateContent: string
         The content of the template after replacing the variables
     """
 
@@ -25,7 +25,7 @@ class Template:
 
         Arguments
         ---------
-        variables:
+        variables: dictionary<any>
             A dictionary containing the variables to be replaced in the
             template
         """
@@ -42,7 +42,7 @@ class Template:
 
         Arguments
         ---------
-        filename:
+        filename: string
             The name of the file in which the content of the template will be
             written
         """

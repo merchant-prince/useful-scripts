@@ -1,41 +1,42 @@
 #! /usr/bin/env python
 
+
 import os
 import sys
 import argparse
 from subprocess import run
 
 
-parser = argparse.ArgumentParser(description="Perform common tasks on the laravel-docker stack")
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Perform common tasks on the laravel-docker stack")
 
-parser.add_argument("action", help="Define an action to take on the stack / application",
-                    choices=("artisan", "composer", "yarn", "phpunit"))
-parser.add_argument("options", nargs=argparse.REMAINDER, help="Optional arguments to pass to the specified action")
+    parser.add_argument("action", help="Define an action to take on the stack / application",
+                        choices=("artisan", "composer", "yarn", "phpunit"))
+    parser.add_argument("options", nargs=argparse.REMAINDER, help="Optional arguments to pass to the specified action")
 
-primary = parser.parse_args()
+    primary = parser.parse_args()
 
-if primary.action == "artisan":
-    run(["docker-compose", "exec", "php", "php", "artisan"] + primary.options)
+    if primary.action == "artisan":
+        run(["docker-compose", "exec", "php", "php", "artisan"] + primary.options)
 
-elif primary.action == "composer":
-    run([
-        "docker", "run", "--rm",
-                         "--interactive",
-                         "--tty",
-                         "--user", "${userId}:${groupId}",
-                         "--workdir", "/application",
-                         "--mount", f"type=bind,source={os.getcwd()}/application/${projectName},target=/application",
-                         "composer"] + primary.options)
+    elif primary.action == "composer":
+        run([
+            "docker", "run", "--rm",
+                             "--interactive",
+                             "--tty",
+                             "--user", "${userId}:${groupId}",
+                             "--mount", f"type=bind,source={os.getcwd()}/application/${projectName},target=/app",
+                             "composer"] + primary.options)
 
-elif primary.action == "yarn":
-    run([
-        "docker", "run", "--rm",
-                         "--interactive",
-                         "--tty",
-                         "--user", "${userId}:${groupId}",
-                         "--workdir", "/application",
-                         "--mount", f"type=bind,source={os.getcwd()}/application/${projectName},target=/application",
-                         "node", "yarn"] + primary.options)
+    elif primary.action == "yarn":
+        run([
+            "docker", "run", "--rm",
+                             "--interactive",
+                             "--tty",
+                             "--user", "${userId}:${groupId}",
+                             "--workdir", "/application",
+                             "--mount", f"type=bind,source={os.getcwd()}/application/${projectName},target=/application",
+                             "node", "yarn"] + primary.options)
 
-elif primary.action == "phpunit":
-    run(["docker-compose", "exec", "php", "php", "./vendor/bin/phpunit"] + primary.options)
+    elif primary.action == "phpunit":
+        run(["docker-compose", "exec", "php", "php", "./vendor/bin/phpunit"] + primary.options)

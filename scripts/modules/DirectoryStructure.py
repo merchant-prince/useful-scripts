@@ -10,7 +10,7 @@ class DirectoryStructure:
 
     Attributes
     ----------
-    structure:
+    structure: dictionary<dictionary<...>>
         A dictionary of dictionaries representing the directory structure.
 
         e.g.: { "one": {

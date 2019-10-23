@@ -16,12 +16,15 @@ from modules.Template import Template
 from modules.DirectoryStructure import DirectoryStructure
 
 
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="A script to automate the installation of a Laravel project.")
-    subparsers = parser.add_subparsers(dest="actions")
-    new_command = subparsers.add_parser("new", help="Install a new laravel application in the current directory")
 
-    new_command.add_argument("name", help="The project name (should be PascalCased)")
+    subparsers = parser.add_subparsers(dest="actions")
+    new_command = subparsers.add_parser("new", help="Install a new laravel application in the current directory.")
+
+    new_command.add_argument("name", help="The project name (should be PascalCased).")
 
     arguments = parser.parse_args()
 
@@ -64,16 +67,16 @@ if __name__ == "__main__":
         Print.eol(2)
 
         if not check.nameIsPascalCased():
-            Print.error("The project name is not PascalCased")
+            Print.error("The project name is not PascalCased.")
             Print.eol(2)
             sys.exit(1)
 
         if check.projectExists():
-            Print.error("Another project with the same name exists in the current directory")
+            Print.error("Another project with the same name exists in the current directory.")
             Print.eol(2)
             sys.exit(1)
 
-        Print.info("Creating the directory structure of the project")
+        Print.info("Creating the directory structure of the project.")
         DirectoryStructure({
             project["name"]: {
                 "configuration": {
@@ -91,11 +94,11 @@ if __name__ == "__main__":
         Print.ok()
         Print.eol(2)
 
-        Print.info("Going to the project root")
+        Print.info("Going to the project root.")
         Print.eol(2)
         with cd(project["name"]):
             with cd("certificate/ssl"):
-                Print.info("Creating docker openssl image")
+                Print.info("Creating docker openssl image.")
                 Print.eol(2)
                 run(["docker", "build", "--tag", "laravel-openssl",
                                         "-"
@@ -103,10 +106,10 @@ if __name__ == "__main__":
                     })), encoding="ascii", check=True)
 
                 Print.eol()
-                Print.success("Created docker openssl image")
+                Print.success("Created docker openssl image.")
                 Print.eol(2)
 
-                Print.info("Generating ssl certificates")
+                Print.info("Generating ssl certificates.")
                 Print.eol(2)
                 run(["docker", "run", "--rm",
                                       "--interactive",
@@ -129,10 +132,10 @@ if __name__ == "__main__":
                                                                    f"/CN={project['uri']}")
                 ], check=True)
                 Print.eol()
-                Print.success("SSL certificates generated")
+                Print.success("SSL certificates generated.")
                 Print.eol(2)
 
-            Print.info("Generating the nginx configuration file")
+            Print.info("Generating the nginx configuration file.")
             with cd("configuration/nginx"):
                 Template(f"{templatesPath}/nginx.conf.template").replace({
                     "projectUri": project["uri"]
@@ -140,7 +143,7 @@ if __name__ == "__main__":
             Print.ok()
             Print.eol(2)
 
-            Print.info("Generating the php dockerfile")
+            Print.info("Generating the php dockerfile.")
             with cd("dockerfile/php"):
                 Template(f"{templatesPath}/php-dockerfile.template").replace({
                     "userId": user["id"],
@@ -149,7 +152,7 @@ if __name__ == "__main__":
             Print.ok()
             Print.eol(2)
 
-            Print.info("Generating docker-compose file")
+            Print.info("Generating docker-compose file.")
             Template(f"{templatesPath}/docker-compose.yml.template").replace({
                 "projectUri": project["uri"],
                 "projectName": project["name"],
@@ -162,7 +165,7 @@ if __name__ == "__main__":
             Print.ok()
             Print.eol(2)
 
-            Print.info("Generating the run binary")
+            Print.info("Generating the run binary.")
             Template(f"{templatesPath}/run.template").replace({
                 "userId": user["id"],
                 "groupId": group["id"],
@@ -172,29 +175,28 @@ if __name__ == "__main__":
             Print.ok()
             Print.eol(2)
 
-            Print.info("Pulling a fresh laravel application")
+            Print.info("Pulling a fresh laravel application.")
             Print.eol(2)
             with cd("application"):
                 run(["docker", "run", "--rm",
                                       "--interactive",
                                       "--tty",
                                       "--user", f"{user['id']}:{group['id']}",
-                                      "--workdir", "/application",
-                                      "--mount", f"type=bind,source={os.getcwd()},target=/application",
+                                      "--mount", f"type=bind,source={os.getcwd()},target=/app",
                                       "composer", "create-project", "--prefer-dist",
                                                                     "--ignore-platform-reqs",
                                                                     "laravel/laravel", project["name"]
                 ])
             Print.eol()
-            Print.success("Pulled a fresh laravel application")
+            Print.success("Pulled a fresh laravel application.")
             Print.eol(2)
 
             Print.eol(1)
-            Print.info("Initializing a git repository for the project")
+            Print.info("Initializing a git repository for the project.")
             Print.eol(2)
             Git.init()
             Print.eol(2)
-            Print.success("Initialized a git repository for project")
+            Print.success("Initialized a git repository for project.")
             Print.eol(2)
 
             # Get the application key
@@ -213,5 +215,5 @@ if __name__ == "__main__":
                 "databasePassword": database["password"]
             }).write(f"application/{project['name']}/.env")
 
-            Print.success(f"Your project is now available at: https://{project['uri']}")
+            Print.success(f"Your project is now available at: https://{project['uri']}.")
             Print.eol(2)
