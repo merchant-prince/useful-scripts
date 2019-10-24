@@ -53,6 +53,15 @@ if __name__ == "__main__":
                 "password": "password"
         }
 
+        mail = {
+                "driver": "smtp",
+                "server": "smtp.mailtrap.io",
+                "port": 2525,
+                "username": "558119fcb320fa",
+                "password": "9e0ea8073accb9",
+                "encryption": "null"
+        }
+
         templatesPath = f"{os.path.dirname(os.path.realpath(__file__))}/templates/laravel"
 
         """
@@ -212,7 +221,13 @@ if __name__ == "__main__":
                 "projectUri": project["uri"],
                 "databaseName": database["name"],
                 "databaseUsername": database["username"],
-                "databasePassword": database["password"]
+                "databasePassword": database["password"],
+                "mailDriver": mail["driver"],
+                "mailServer": mail["server"],
+                "mailPort": mail["port"],
+                "mailUsername": mail["username"],
+                "mailPassword": mail["password"],
+                "mailEncryption": mail["encryption"],
             }).write(f"application/{project['name']}/.env")
 
             Print.success(f"Your project is now available at: https://{project['uri']}.")
