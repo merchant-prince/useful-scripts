@@ -104,6 +104,7 @@ if __name__ == "__main__":
         Print.eol(2)
 
         Print.info("Going to the project root.")
+        Print.ok()
         Print.eol(2)
         with cd(project["name"]):
             with cd("certificate/ssl"):

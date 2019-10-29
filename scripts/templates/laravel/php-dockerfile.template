@@ -3,14 +3,17 @@ ARG TAG=fpm
 FROM php:$${TAG}
 
 RUN apt-get update \
- && apt-get install -y libpq-dev \
+ && apt-get install -y libpq-dev cron \
  && docker-php-ext-configure pgsql \
  && docker-php-ext-install bcmath pdo_pgsql pgsql pcntl \
  && pecl install redis \
  && docker-php-ext-enable redis \
+ && apt autoremove \
  && rm -rf /var/lib/apt/lists/*
 
 RUN mv "$${PHP_INI_DIR}/php.ini-development" "$${PHP_INI_DIR}/php.ini"
+
+RUN echo "* * * * * www-data php /var/www/html/artisan schedule:run >> /dev/null 2>&1" >> /etc/crontab
 
 ###
 # Change the UID and GID of the www-data so that there are no
