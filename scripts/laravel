@@ -55,7 +55,7 @@ if __name__ == "__main__":
 
         mail = {
                 "driver": "smtp",
-                "server": "smtp.mailtrap.io",
+                "host": "smtp.mailtrap.io",
                 "port": 2525,
                 "username": "558119fcb320fa",
                 "password": "9e0ea8073accb9",
@@ -223,7 +223,7 @@ if __name__ == "__main__":
                 "databaseUsername": database["username"],
                 "databasePassword": database["password"],
                 "mailDriver": mail["driver"],
-                "mailServer": mail["server"],
+                "mailHost": mail["host"],
                 "mailPort": mail["port"],
                 "mailUsername": mail["username"],
                 "mailPassword": mail["password"],
