@@ -73,17 +73,23 @@ if __name__ == "__main__":
         check = Check(project["name"])
 
         Print.info("Checking base project criteria...")
-        Print.eol(2)
 
         if not check.nameIsPascalCased():
+            Print.fail()
+            Print.eol(2)
             Print.error("The project name is not PascalCased.")
             Print.eol(2)
             sys.exit(1)
 
         if check.projectExists():
+            Print.fail()
+            Print.eol(2)
             Print.error("Another project with the same name exists in the current directory.")
             Print.eol(2)
             sys.exit(1)
+
+        Print.ok()
+        Print.eol(2)
 
         Print.info("Creating the directory structure of the project.")
         DirectoryStructure({
@@ -215,6 +221,12 @@ if __name__ == "__main__":
                     if re.search("APP_KEY", line):
                         applicationKey = re.findall("APP_KEY=(.*)", line.strip())[0]
                         break
+
+            Print.info("Backing up the .env file")
+            with cd(f"application/{project['name']}"):
+                os.rename(".env", ".env.backup")
+            Print.ok()
+            Print.eol(2)
 
             Template(f"{templatesPath}/env.template").replace({
                 "projectName": project["name"],
