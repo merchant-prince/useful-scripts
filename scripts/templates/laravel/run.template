@@ -20,13 +20,7 @@ if __name__ == "__main__":
         run(["docker-compose", "exec", "php", "php", "artisan"] + primary.options)
 
     elif primary.action == "composer":
-        run([
-            "docker", "run", "--rm",
-                             "--interactive",
-                             "--tty",
-                             "--user", "${userId}:${groupId}",
-                             "--mount", f"type=bind,source={os.getcwd()}/application/${projectName},target=/app",
-                             "composer"] + primary.options)
+        run(["docker-compose", "exec", "php", "composer"] + primary.options)
 
     elif primary.action == "yarn":
         run([

@@ -3,9 +3,10 @@ ARG TAG=fpm
 FROM php:$${TAG}
 
 RUN apt-get update \
- && apt-get install -y libpq-dev cron \
+ && apt-get install -y libpq-dev libzip-dev cron zip \
  && docker-php-ext-configure pgsql \
- && docker-php-ext-install bcmath pdo_pgsql pgsql pcntl \
+ && docker-php-ext-configure zip --with-libzip \
+ && docker-php-ext-install bcmath pdo_pgsql pgsql pcntl zip \
  && pecl install redis \
  && docker-php-ext-enable redis \
  && apt autoremove \
@@ -13,7 +14,11 @@ RUN apt-get update \
 
 RUN mv "$${PHP_INI_DIR}/php.ini-development" "$${PHP_INI_DIR}/php.ini"
 
+# Install crontab for laravel scheduler
 RUN echo "* * * * * www-data php /var/www/html/artisan schedule:run >> /dev/null 2>&1" >> /etc/crontab
+
+# Install composer
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
 ###
 # Change the UID and GID of the www-data so that there are no
