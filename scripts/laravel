@@ -103,7 +103,9 @@ if __name__ == "__main__":
                 "dockerfile": {
                     "php": {}
                 },
-                "application": {}
+                "application": {
+                    "laravel": {}
+                }
             }
         })
         Print.ok()
@@ -193,7 +195,7 @@ if __name__ == "__main__":
 
             Print.info("Pulling a fresh laravel application.")
             Print.eol(2)
-            with cd("application"):
+            with cd("application/laravel"):
                 run(["docker", "run", "--rm",
                                       "--interactive",
                                       "--tty",
@@ -223,7 +225,7 @@ if __name__ == "__main__":
                         break
 
             Print.info("Backing up the .env file")
-            with cd(f"application/{project['name']}"):
+            with cd(f"application/laravel/{project['name']}"):
                 os.rename(".env", ".env.backup")
             Print.ok()
             Print.eol(2)
@@ -241,7 +243,7 @@ if __name__ == "__main__":
                 "mailUsername": mail["username"],
                 "mailPassword": mail["password"],
                 "mailEncryption": mail["encryption"],
-            }).write(f"application/{project['name']}/.env")
+            }).write(f"application/laravel/{project['name']}/.env")
 
             Print.success(f"Your project is now available at: https://{project['uri']}.")
             Print.eol(2)

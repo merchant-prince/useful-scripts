@@ -6,7 +6,7 @@ services:
         container_name: nginx
         volumes:
             - ./configuration/nginx/${projectUri}.conf:/etc/nginx/conf.d/${projectUri}.conf
-            - ./application/${projectName}:/var/www/html
+            - ./application/laravel/${projectName}:/var/www/html
             - ./certificate/ssl:/etc/nginx/ssl
         ports:
             - "80:80"
@@ -14,7 +14,7 @@ services:
         depends_on:
             - php
         networks:
-            - application
+            - laravel
 
     php:
         build:
@@ -25,12 +25,12 @@ services:
                 - GROUP_ID=${groupId}
         container_name: php
         volumes:
-            - ./application/${projectName}:/var/www/html
+            - ./application/laravel/${projectName}:/var/www/html
         depends_on:
             - postgresql
             - redis
         networks:
-            - application
+            - laravel
             - database
             - redis
 
@@ -55,7 +55,7 @@ services:
             - redis
 
 networks:
-    application:
+    laravel:
     database:
     redis:
 

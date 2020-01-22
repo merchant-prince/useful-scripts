@@ -29,7 +29,7 @@ if __name__ == "__main__":
                              "--tty",
                              "--user", "${userId}:${groupId}",
                              "--workdir", "/application",
-                             "--mount", f"type=bind,source={os.getcwd()}/application/${projectName},target=/application",
+                             "--mount", f"type=bind,source={os.getcwd()}/application/laravel/${projectName},target=/application",
                              "node", "yarn"] + primary.options)
 
     elif primary.action == "phpunit":
