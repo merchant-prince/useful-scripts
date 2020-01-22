@@ -25,6 +25,7 @@ if __name__ == "__main__":
     new_command = subparsers.add_parser("new", help="Install a new laravel application in the current directory.")
 
     new_command.add_argument("name", help="The project name (should be PascalCased).")
+    new_command.add_argument("--domain", default="laravel.local", help="The project domain.")
 
     arguments = parser.parse_args()
 
@@ -36,7 +37,7 @@ if __name__ == "__main__":
 
         project = {
                 "name": arguments.name,
-                "uri": "laravel.local"
+                "uri": arguments.domain
         }
 
         user = {
@@ -218,7 +219,7 @@ if __name__ == "__main__":
             Print.eol(2)
 
             # Get the application key
-            with open(f"application/{project['name']}/.env") as envFile:
+            with open(f"application/laravel/{project['name']}/.env") as envFile:
                 for line in envFile:
                     if re.search("APP_KEY", line):
                         applicationKey = re.findall("APP_KEY=(.*)", line.strip())[0]
