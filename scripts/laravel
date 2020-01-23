@@ -194,42 +194,52 @@ if __name__ == "__main__":
             Print.ok()
             Print.eol(2)
 
-            Print.info("Pulling a fresh laravel application.")
-            Print.eol(2)
-            with cd("application/laravel"):
-                run(["docker", "run", "--rm",
-                                      "--interactive",
-                                      "--tty",
-                                      "--user", f"{user['id']}:{group['id']}",
-                                      "--mount", f"type=bind,source={os.getcwd()},target=/app",
-                                      "composer", "create-project", "--prefer-dist",
-                                                                    "--ignore-platform-reqs",
-                                                                    "laravel/laravel", project["name"]
-                ])
-            Print.eol()
-            Print.success("Pulled a fresh laravel application.")
-            Print.eol(2)
+            with cd("application"):
+                Print.info("Initializing a .gitignore file for the application directory")
+                Print.eol()
+                with open(".gitignore", "w") as gitignore:
+                    gitignore.write('*')
+                Print.eol()
+                Print.success("Initialized a .gitignore file for the application directory")
+                Print.eol(2)
 
-            Print.eol(1)
-            Print.info("Initializing a git repository for the project.")
-            Print.eol(2)
-            Git.init()
-            Print.eol(2)
-            Print.success("Initialized a git repository for project.")
-            Print.eol(2)
+                Print.info("Pulling a fresh laravel application.")
+                Print.eol(2)
+                with cd("laravel"):
+                    run(["docker", "run", "--rm",
+                                          "--interactive",
+                                          "--tty",
+                                          "--user", f"{user['id']}:{group['id']}",
+                                          "--mount", f"type=bind,source={os.getcwd()},target=/app",
+                                          "composer", "create-project", "--prefer-dist",
+                                                                        "--ignore-platform-reqs",
+                                                                        "laravel/laravel", project["name"]
+                    ])
+                Print.eol()
+                Print.success("Pulled a fresh laravel application.")
+                Print.eol(2)
 
-            # Get the application key
-            with open(f"application/laravel/{project['name']}/.env") as envFile:
-                for line in envFile:
-                    if re.search("APP_KEY", line):
-                        applicationKey = re.findall("APP_KEY=(.*)", line.strip())[0]
-                        break
+                Print.eol(1)
+                Print.info("Initializing a git repository for the laravel project.")
+                Print.eol(2)
+                with cd(f"laravel/{project['name']}"):
+                    Git.init()
+                Print.eol(2)
+                Print.success("Initialized a git repository for the laravel project.")
+                Print.eol(2)
 
-            Print.info("Backing up the .env file")
             with cd(f"application/laravel/{project['name']}"):
+                # Get the application key
+                with open(f".env") as envFile:
+                    for line in envFile:
+                        if re.search("APP_KEY", line):
+                            applicationKey = re.findall("APP_KEY=(.*)", line.strip())[0]
+                            break
+
+                Print.info("Backing up the .env file")
                 os.rename(".env", ".env.backup")
-            Print.ok()
-            Print.eol(2)
+                Print.ok()
+                Print.eol(2)
 
             Template(f"{templatesPath}/env.template").replace({
                 "projectName": project["name"],
@@ -245,6 +255,14 @@ if __name__ == "__main__":
                 "mailPassword": mail["password"],
                 "mailEncryption": mail["encryption"],
             }).write(f"application/laravel/{project['name']}/.env")
+
+            Print.eol(1)
+            Print.info("Initializing a git repository for the docker configuration.")
+            Print.eol(2)
+            Git.init()
+            Print.eol(2)
+            Print.success("Initialized a git repository for the docker configuration.")
+            Print.eol(2)
 
             Print.success(f"Your project is now available at: https://{project['uri']}.")
             Print.eol(2)
