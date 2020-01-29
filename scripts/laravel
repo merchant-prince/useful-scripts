@@ -19,7 +19,7 @@ from modules.DirectoryStructure import DirectoryStructure
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="A script to automate the installation of a Laravel project.")
+    parser = argparse.ArgumentParser(description="A script to automate the installation of Laravel projects.")
 
     subparsers = parser.add_subparsers(dest="actions")
     new_command = subparsers.add_parser("new", help="Install a new laravel application in the current directory.")
