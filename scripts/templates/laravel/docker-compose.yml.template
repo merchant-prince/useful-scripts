@@ -14,7 +14,9 @@ services:
         depends_on:
             - php
         networks:
-            - laravel
+            laravel:
+                aliases:
+                    - ${projectUri}
 
     php:
         build:
