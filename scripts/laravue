@@ -1,0 +1,623 @@
+#! /usr/bin/env python
+
+
+import re
+import os
+import sys
+import stat
+import argparse
+from subprocess import run
+
+from modules.cd import cd
+from modules.Print import Print
+from modules.DirectoryStructure import DirectoryStructure
+
+
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="A script to setup a VueJs frontend with a Laravel backend.")
+
+    subparsers = parser.add_subparsers(dest="actions")
+
+    new_command = subparsers.add_parser("setup", help="Install the project in the current directory.")
+
+    new_command.add_argument("name", help="The project name (should be PascalCased).")
+
+    arguments = parser.parse_args()
+
+
+    if arguments.actions == "setup":
+
+        """
+        Variables
+        """
+
+        project = {
+            "name": arguments.name,
+            "domain": "laravel.local",
+            "backend": {
+              "domain": None
+            }
+        }
+
+        user = {
+            "id": os.geteuid()
+        }
+
+        group = {
+            "id": os.getegid()
+        }
+
+        ssl = {
+            "key": "key.pem",
+            "certificate": "certificate.pem"
+        }
+
+        database = {
+            "name": project["name"].lower(),
+            "username": "username",
+            "password": "password"
+        }
+
+        mail = {
+            "driver": "smtp",
+            "host": "smtp.mailtrap.io",
+            "port": 2525,
+            "username": "558119fcb320fa",
+            "password": "9e0ea8073accb9",
+            "encryption": "null"
+        }
+
+
+        """
+        User Inputs
+        """
+
+        project_domain = input(f"Enter the project domain (default: {project['domain']}): ")
+
+        project["domain"] = project_domain if project_domain != '' else project["domain"]
+        project["backend"]["domain"] = f"backend.{project['domain']}"
+
+        del project_domain
+
+
+        """
+        Templates
+        """
+
+        OPENSSL_DOCKERFILE = """\
+FROM debian:latest
+
+RUN apt-get update && apt-get install -y openssl
+
+WORKDIR /certificates
+
+VOLUME /certificates
+
+ENTRYPOINT ["openssl"]
+"""
+
+        BACKEND_NGINX_CONFIGURATION = f"""\
+server {{
+    listen 80 default_server;
+    server_name {project['backend']['domain']};
+
+    return 301 https://$server_name$request_uri;
+}}
+
+server {{
+    listen 443 ssl;
+    server_name {project['backend']['domain']};
+
+    ssl_certificate /etc/nginx/ssl/{ssl['certificate']};
+    ssl_certificate_key /etc/nginx/ssl/{ssl['key']};
+
+    root /var/www/html/public;
+
+    add_header X-Frame-Options "SAMEORIGIN";
+    add_header X-XSS-Protection "1; mode=block";
+    add_header X-Content-Type-Options "nosniff";
+
+    index index.html index.htm index.php;
+
+    charset utf-8;
+
+    location / {{
+        try_files $uri $uri/ /index.php?$query_string;
+    }}
+
+    location = /favicon.ico {{ access_log off; log_not_found off; }}
+    location = /robots.txt  {{ access_log off; log_not_found off; }}
+
+    error_page 404 /index.php;
+
+    location ~ \.php$ {{
+        fastcgi_pass php:9000;
+        fastcgi_index index.php;
+        fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+        include fastcgi_params;
+    }}
+
+    location ~ /\.(?!well-known).* {{
+        deny all;
+    }}
+}}
+"""
+
+        PHP_DOCKERFILE = f"""\
+FROM php:fpm
+
+RUN apt-get update \\
+ && apt-get install -y libpq-dev libzip-dev cron zip \\
+ && docker-php-ext-configure pgsql \\
+ && docker-php-ext-configure zip \\
+ && docker-php-ext-install bcmath pdo_pgsql pgsql pcntl zip \\
+ && pecl install redis \\
+ && docker-php-ext-enable redis \\
+ && apt autoremove \\
+ && rm -rf /var/lib/apt/lists/*
+
+RUN mv "${{PHP_INI_DIR}}/php.ini-development" "${{PHP_INI_DIR}}/php.ini"
+
+# Install crontab for laravel scheduler
+RUN echo "* * * * * www-data php /var/www/html/artisan schedule:run >> /dev/null 2>&1" >> /etc/crontab
+
+# Install composer
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+
+###
+# Change the UID and GID of the www-data so that there are no
+# permission conflicts on the files manipulated by the container
+# on the host.
+###
+
+ARG USER_ID={user['id']}
+ARG GROUP_ID={group['id']}
+
+RUN userdel -f www-data && \\
+    if getent group www-data; \\
+    then \\
+      groupdel www-data; \\
+    fi && \\
+    groupadd -g ${{GROUP_ID}} www-data && \\
+    useradd -l -u ${{USER_ID}} -g www-data www-data && \\
+    install -d -m 0755 -o www-data -g www-data /home/www-data && \\
+    chown --changes \\
+          --silent \\
+          --no-dereference \\
+          --recursive \\
+          --from=33:33 \\
+          ${{USER_ID}}:${{GROUP_ID}} \\
+            /home/www-data
+
+VOLUME /var/www/html
+
+USER www-data
+"""
+
+        DOCKER_COMPOSE = f"""\
+version: "3.7"
+
+services:
+    frontend:
+        image: node:latest
+        working_dir: /application
+        volumes:
+            - ./application/frontend/{project['name'].lower()}:/application
+        ports:
+            - "8080:8080"
+        command: ["yarn", "run", "serve"]
+
+    backend:
+        image: nginx:latest
+        volumes:
+            - ./configuration/backend/nginx/conf/{project['backend']['domain']}.conf:/etc/nginx/conf.d/{project['backend']['domain']}.conf
+            - ./configuration/backend/nginx/ssl:/etc/nginx/ssl
+            - ./application/backend/{project['name']}:/var/www/html
+        ports:
+            - "80:80"
+            - "443:443"
+        depends_on:
+            - php
+        networks:
+            backend:
+            php:
+                aliases:
+                    - {project['backend']['domain']}
+
+    php:
+        build:
+            context: ./dockerfiles/php
+            args:
+                USER_ID: {user['id']}
+                GROUP_ID: {group['id']}
+        volumes:
+            - ./application/backend/{project['name']}:/var/www/html
+        depends_on:
+            - postgresql
+            - redis
+        networks:
+            - php
+            - postgresql
+            - redis
+
+    postgresql:
+        image: postgres:latest
+        volumes:
+            - postgresql:/var/lib/postgresql/data
+        environment:
+            POSTGRES_DB: {database['name']}
+            POSTGRES_USER: {database['username']}
+            POSTGRES_PASSWORD: {database['password']}
+        networks:
+            - postgresql
+
+    redis:
+        image: redis:latest
+        volumes:
+            - redis:/data
+        networks:
+            - redis
+
+
+networks:
+    backend:
+    php:
+    postgresql:
+    redis:
+
+
+volumes:
+    postgresql:
+    redis:
+"""
+
+        RUN_BINARY = f"""\
+#! /usr/bin/env python
+
+
+import os
+import sys
+import argparse
+from subprocess import run
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Perform common tasks on the project.")
+
+    parser.add_argument("tool", help="The tool to call on the application.", choices=("artisan", "composer", "yarn", "phpunit"))
+    parser.add_argument("arguments", nargs=argparse.REMAINDER, help="Optional arguments to pass to the specified tool.")
+
+    parsed = parser.parse_args()
+
+    if parsed.tool == "artisan":
+        run(["docker-compose", "exec", "php", "php", "artisan"] + parsed.arguments)
+
+    elif parsed.tool == "composer":
+        run(["docker-compose", "exec", "php", "composer"] + parsed.arguments)
+
+    elif parsed.tool == "yarn":
+        run(["docker", "run", "--rm",
+                              "--interactive",
+                              "--tty",
+                              "--user", "{user['id']}:{group['id']}",
+                              "--workdir", "/application",
+                              "--mount", f"type=bind,source={{os.getcwd()}}/application/frontend/{project['name'].lower()},target=/application",
+                              "node", "yarn"] + parsed.arguments)
+
+    elif parsed.tool == "phpunit":
+        run(["docker-compose", "exec", "php", "php", "./vendor/bin/phpunit"] + parsed.arguments)
+
+    else:
+        parser.print_help()
+        sys.exit(0)
+"""
+
+        GITIGNORE = """\
+*
+
+!.gitignore
+"""
+
+        VUE_CLI_DOCKERFILE = """\
+FROM node:latest
+
+RUN yarn global add @vue/cli
+
+WORKDIR /application
+
+VOLUME /application
+"""
+
+        ENV = f"""\
+APP_NAME={project['name']}
+APP_ENV=local
+APP_KEY=
+APP_DEBUG=true
+APP_URL=https://{project['domain']}
+
+LOG_CHANNEL=stack
+
+DB_CONNECTION=pgsql
+DB_HOST=postgresql
+DB_PORT=5432
+DB_DATABASE={database['name']}
+DB_USERNAME={database['username']}
+DB_PASSWORD={database['password']}
+
+REDIS_HOST=redis
+REDIS_PORT=6379
+
+BROADCAST_DRIVER=log
+
+CACHE_DRIVER=redis
+
+QUEUE_CONNECTION=redis
+
+SESSION_DRIVER=redis
+
+MAIL_DRIVER={mail['driver']}
+MAIL_HOST={mail['host']}
+MAIL_PORT={mail['port']}
+MAIL_USERNAME={mail['username']}
+MAIL_PASSWORD={mail['password']}
+MAIL_ENCRYPTION={mail['encryption']}
+"""
+
+        VUE_CONFIG = """\
+module.exports = {
+  devServer: {
+    https: true
+  }
+}
+"""
+
+
+        """
+        Run
+        """
+
+        Print.eol()
+        Print.info("Checking base project criteria")
+
+        if not bool(re.match('^[A-Z][a-z]+(?:[A-Z][a-z]+)*$', project["name"])):
+            Print.fail()
+            Print.eol(2)
+            Print.error("The project name is not PascalCased.")
+            Print.eol(2)
+            sys.exit(1)
+
+        if (os.path.isdir(project["name"]) if project["name"] in os.listdir() else False):
+            Print.fail()
+            Print.eol(2)
+            Print.error("Another project with the same name exists in the current directory.")
+            Print.eol(2)
+            sys.exit(1)
+
+        Print.ok()
+        Print.eol(2)
+
+
+        Print.info("Creating the directory structure of the project")
+        DirectoryStructure({
+            project["name"]: {
+                "configuration": {
+                    "backend": {
+                        "nginx": {
+                            "conf": {},
+                            "ssl": {}
+                        }
+                    }
+                },
+                "dockerfiles": {
+                    "php": {}
+                },
+                "application": {
+                    "frontend": {},
+                    "backend": {}
+                }
+            }
+        })
+        Print.ok()
+        Print.eol(2)
+
+
+        with cd(project["name"]):
+            with cd("configuration/backend/nginx"):
+                with cd("ssl"):
+                    Print.info("Creating the docker openssl image...")
+                    Print.eol(2)
+                    run(["docker", "build", "--tag", "openssl:local", "-"], input=OPENSSL_DOCKERFILE, encoding="ascii", check=True)
+                    Print.eol()
+                    Print.success("Created docker openssl image.")
+                    Print.eol(2)
+
+                    Print.info("Generating ssl certificates...")
+                    Print.eol(2)
+                    run(["docker", "run", "--rm",
+                                        "--interactive",
+                                        "--tty",
+                                        "--mount", f"type=bind,source={os.getcwd()},target=/certificates",
+                                        "--user", f"{user['id']}:{group['id']}",
+                                        "laravel-openssl", "req", "-x509",
+                                                            "-newkey",
+                                                            "rsa:4096",
+                                                            "-keyout", ssl["key"],
+                                                            "-out", ssl["certificate"],
+                                                            "-days", "365",
+                                                            "-nodes",
+                                                            "-sha256",
+                                                            "-subj", f"/CN={project['domain']}"
+                    ], check=True)
+                    Print.eol()
+                    Print.success("SSL certificates generated.")
+                    Print.eol(2)
+
+                with cd("conf"):
+                    Print.info("Generating the nginx configuration file")
+                    with open(f"{project['backend']['domain']}.conf", "w") as file:
+                        file.write(BACKEND_NGINX_CONFIGURATION)
+                    Print.ok()
+                    Print.eol(2)
+
+
+            with cd("dockerfiles/php"):
+                Print.info("Generating the php dockerfile")
+                with open("Dockerfile", "w") as file:
+                    file.write(PHP_DOCKERFILE)
+                Print.ok()
+                Print.eol(2)
+
+
+            Print.info("Generating the docker-compose file")
+            with open("docker-compose.yml", "w") as file:
+                file.write(DOCKER_COMPOSE)
+            Print.ok()
+            Print.eol(2)
+
+
+            Print.info("Generating the run binary")
+            with open("run", "w") as file:
+                file.write(RUN_BINARY)
+            os.chmod("run", os.stat("run").st_mode | stat.S_IEXEC)
+            Print.ok()
+            Print.eol(2)
+
+
+            with cd("application"):
+                with cd("frontend"):
+                    Print.info("Creating a .gitignore file in the frontend application directory")
+                    with open(".gitignore", "w") as file:
+                        file.write(GITIGNORE)
+                    Print.ok()
+                    Print.eol(2)
+
+                    Print.info("Creating the docker Vue-Cli image...")
+                    Print.eol(2)
+                    run(["docker", "build", "--tag", "vue-cli:local", "-"], input=VUE_CLI_DOCKERFILE, encoding="ascii", check=True)
+                    Print.eol()
+                    Print.success("Created docker Vue-Cli image.")
+                    Print.eol(2)
+
+
+                    Print.info("Pulling a fresh VueJs project...")
+                    Print.eol(2)
+                    run(["docker", "run", "--rm",
+                                          "--interactive",
+                                          "--tty",
+                                          "--user", f"{user['id']}:{group['id']}",
+                                          "--mount", f"type=bind,source={os.getcwd()},target=/application",
+                                          "vue-cli:local",
+                                                "vue", "create", project["name"].lower()])
+                    Print.eol(2)
+                    Print.success("Pulled a fresh VueJs project.")
+                    Print.eol(2)
+
+                    with cd(project["name"].lower()):
+                        Print.info("Initializing a git repository for the VueJs project...")
+                        Print.eol(2)
+                        run(["git", "commit", "-m", "initial commit"])
+                        run(["git", "checkout", "-b", "development"])
+                        Print.eol(2)
+                        Print.info("Initialized a git repository for the VueJs project.")
+                        Print.eol(2)
+
+                        # Post-Installation tasks
+                        Print.info("Running some post-installation tasks on the VueJs project")
+
+                        with open("vue.config.js", "w") as file:
+                            file.write(VUE_CONFIG)
+
+                        run(["git", "add", "."])
+                        run(["git", "commit", "-qm", "post-installation tasks"])
+
+                        Print.ok()
+                        Print.eol(2)
+
+
+                with cd("backend"):
+                    Print.info("Creating a .gitignore file in the backend application directory")
+                    with open(".gitignore", "w") as file:
+                        file.write(GITIGNORE)
+                    Print.ok()
+                    Print.eol(2)
+
+
+                    Print.info("Pulling a fresh laravel application...")
+                    Print.eol(2)
+                    run(["docker", "run", "--rm",
+                                          "--interactive",
+                                          "--tty",
+                                          "--user", f"{user['id']}:{group['id']}",
+                                          "--mount", f"type=bind,source={os.getcwd()},target=/app",
+                                          "composer", "create-project", "--prefer-dist",
+                                                                        "--ignore-platform-reqs",
+                                                                        "laravel/laravel", project["name"]])
+                    Print.eol(2)
+                    Print.success("Pulled a fresh laravel application.")
+                    Print.eol(2)
+
+                    with cd(project['name']):
+                        Print.info("Backing up the .env file")
+                        os.rename(".env", ".env.backup")
+                        Print.ok()
+                        Print.eol(2)
+
+                        Print.info("Setting up a new .env file")
+                        with open(".env", "w") as file:
+                            file.write(ENV)
+                        Print.ok()
+                        Print.eol(2)
+
+
+                        Print.info("Initializing a git repository for the laravel project...")
+                        Print.eol(2)
+                        run(["git", "init"])
+                        run(["git", "add", "."])
+                        run(["git", "commit", "-m", "initial commit"])
+                        run(["git", "checkout", "-b", "development"])
+                        Print.eol(2)
+                        Print.success("Initialized a git repository for the laravel project.")
+                        Print.eol(2)
+
+
+            Print.info("Initializing a git repository for the docker configuration...")
+            Print.eol(2)
+            run(["git", "init"])
+            run(["git", "add", "."])
+            run(["git", "commit", "-m", "initial commit"])
+            run(["git", "checkout", "-b", "development"])
+            Print.eol(2)
+            Print.success("Initialized a git repository for the docker configuration.")
+            Print.eol(2)
+
+            """
+            Post Installation
+            """
+            Print.info("Building docker-compose containers...")
+            Print.eol(2)
+            run(["docker-compose", "build"])
+            Print.eol(2)
+            Print.success("Built docker-compose containers.")
+            Print.eol(2)
+
+            Print.info("Generating a new Laravel application key...")
+            Print.eol(2)
+            run(["docker-compose", "run", "php", "php", "artisan", "key:generate"])
+            run(["docker-compose", "down", "-v"])
+            Print.eol(2)
+            Print.success("Generated a new Laravel application key.")
+            Print.eol(2)
+
+
+            Print.success("Your project is successfully set up.")
+            Print.eol(2)
+            Print.info(f"The frontend will be available at: https://localhost")
+            Print.eol()
+            Print.info(f"The backend will be available at: https://{project['backend']['domain']}")
+            Print.eol(2)
+
+    else:
+        parser.print_help()
+        sys.exit(0)
