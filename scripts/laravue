@@ -595,6 +595,7 @@ module.exports = {
             """
             Post Installation
             """
+
             Print.info("Building docker-compose containers...")
             Print.eol(2)
             run(["docker-compose", "build"])

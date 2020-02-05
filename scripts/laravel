@@ -16,16 +16,16 @@ from modules.DirectoryStructure import DirectoryStructure
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="A script to automate the installation of Laravel projects.")
+    parser = argparse.ArgumentParser(description="A script to setup a Laravel application.")
 
     subparsers = parser.add_subparsers(dest="actions")
-    new_command = subparsers.add_parser("new", help="Install a new laravel application in the current directory.")
+    new_command = subparsers.add_parser("setup", help="Install a new laravel application in the current directory.")
 
     new_command.add_argument("name", help="The project name (should be PascalCased).")
 
     arguments = parser.parse_args()
 
-    if arguments.actions == "new":
+    if arguments.actions == "setup":
 
         """
         Variables
@@ -71,8 +71,7 @@ if __name__ == "__main__":
 
         project_domain = input(f"Enter the project domain (default: {project['domain']}): ")
 
-        if project_domain != '':
-            project["domain"] = project_domain
+        project["domain"] = project_domain if project_domain != '' else project["domain"]
 
         del project_domain
 
@@ -90,7 +89,7 @@ WORKDIR /certificates
 
 VOLUME /certificates
 
-ENTRYPOINT ["openssl"]\
+ENTRYPOINT ["openssl"]
 """
 
         NGINX_CONFIGURATION = f"""\
@@ -137,7 +136,7 @@ server {{
     location ~ /\.(?!well-known).* {{
         deny all;
     }}
-}}\
+}}
 """
 
         PHP_DOCKERFILE = f"""\
@@ -186,7 +185,7 @@ RUN userdel -f www-data && \\
           ${{USER_ID}}:${{GROUP_ID}} \\
             /home/www-data
 
-USER www-data\
+USER www-data
 """
 
         DOCKER_COMPOSE = f"""\
@@ -195,11 +194,10 @@ version: "3.7"
 services:
     nginx:
         image: nginx:latest
-        container_name: {project['name'].lower()}_nginx
         volumes:
-            - ./configuration/nginx/{project['domain']}.conf:/etc/nginx/conf.d/{project['domain']}.conf
+            - ./configuration/nginx/conf/{project['domain']}.conf:/etc/nginx/conf.d/{project['domain']}.conf
+            - ./configuration/nginx/ssl:/etc/nginx/ssl
             - ./application/{project['name']}:/var/www/html
-            - ./certificate/ssl:/etc/nginx/ssl
         ports:
             - "80:80"
             - "443:443"
@@ -212,11 +210,10 @@ services:
 
     php:
         build:
-            context: ./dockerfile/php
+            context: ./dockerfiles/php
             args:
                 - USER_ID={user['id']}
                 - GROUP_ID={group['id']}
-        container_name: {project['name'].lower()}_php
         volumes:
             - ./application/{project['name']}:/var/www/html
         depends_on:
@@ -229,7 +226,6 @@ services:
 
     postgresql:
         image: postgres:latest
-        container_name: {project['name'].lower()}_postgresql
         volumes:
             - database:/var/lib/postgresql/data
         environment:
@@ -241,7 +237,6 @@ services:
 
     redis:
         image: redis:latest
-        container_name: {project['name'].lower()}_redis
         volumes:
             - redis:/data
         networks:
@@ -254,7 +249,7 @@ networks:
 
 volumes:
     database:
-    redis:\
+    redis:
 """
 
         RUN_BINARY = f"""\
@@ -270,39 +265,38 @@ from subprocess import run
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Perform common tasks on the laravel-docker stack")
 
-    parser.add_argument("action", help="Define an action to take on the stack / application",
-                        choices=("artisan", "composer", "yarn", "phpunit"))
-    parser.add_argument("options", nargs=argparse.REMAINDER, help="Optional arguments to pass to the specified action")
+    parser.add_argument("tool", help="Define an action to take on the stack / application", choices=("artisan", "composer", "yarn", "phpunit"))
+    parser.add_argument("arguments", nargs=argparse.REMAINDER, help="Optional arguments to pass to the specified action")
 
-    primary = parser.parse_args()
+    parsed = parser.parse_args()
 
-    if primary.action == "artisan":
-        run(["docker-compose", "exec", "php", "php", "artisan"] + primary.options)
+    if parsed.tool == "artisan":
+        run(["docker-compose", "exec", "php", "php", "artisan"] + parsed.arguments)
 
-    elif primary.action == "composer":
-        run(["docker-compose", "exec", "php", "composer"] + primary.options)
+    elif parsed.tool == "composer":
+        run(["docker-compose", "exec", "php", "composer"] + parsed.arguments)
 
-    elif primary.action == "yarn":
+    elif parsed.tool == "yarn":
         run(["docker", "run", "--rm",
                               "--interactive",
                               "--tty",
                               "--user", "{user['id']}:{group['id']}",
                               "--workdir", "/application",
                               "--mount", f"type=bind,source={{os.getcwd()}}/application/{project['name']},target=/application",
-                              "node", "yarn"] + primary.options)
+                              "node", "yarn"] + parsed.arguments)
 
-    elif primary.action == "phpunit":
-        run(["docker-compose", "exec", "php", "php", "./vendor/bin/phpunit"] + primary.options)
+    elif parsed.tool == "phpunit":
+        run(["docker-compose", "exec", "php", "php", "./vendor/bin/phpunit"] + parsed.arguments)
 
     else:
         parser.print_help()
-        sys.exit(0)\
+        sys.exit(0)
 """
 
         GITIGNORE = """\
 *
 
-!.gitignore\
+!.gitignore
 """
 
         ENV = f"""\
@@ -370,12 +364,12 @@ MAIL_ENCRYPTION={mail['encryption']}\
         DirectoryStructure({
             project["name"]: {
                 "configuration": {
-                    "nginx": {}
+                    "nginx": {
+                        "conf": {},
+                        "ssl": {}
+                    }
                 },
-                "certificate": {
-                    "ssl": {}
-                },
-                "dockerfile": {
+                "dockerfiles": {
                     "php": {}
                 },
                 "application": {}
@@ -386,58 +380,51 @@ MAIL_ENCRYPTION={mail['encryption']}\
 
 
         with cd(project["name"]):
-            with cd("certificate/ssl"):
-                Print.info("Creating the docker openssl image...")
-                Print.eol(2)
-
-                run(["docker", "build", "--tag", "openssl:laravel", "-"], input=OPENSSL_DOCKERFILE, encoding="ascii", check=True)
-
-                Print.eol()
-                Print.success("Created docker openssl image.")
-                Print.eol(2)
-
-
-                Print.info("Generating ssl certificates...")
-                Print.eol(2)
-                run(["docker", "run", "--rm",
-                                      "--interactive",
-                                      "--tty",
-                                      "--mount", f"type=bind,source={os.getcwd()},target=/certificates",
-                                      "--user", f"{user['id']}:{group['id']}",
-                                      "laravel-openssl", "req", "-x509",
-                                                         "-newkey",
-                                                         "rsa:4096",
-                                                         "-keyout", ssl["key"],
-                                                         "-out", ssl["certificate"],
-                                                         "-days", "365",
-                                                         "-nodes",
-                                                         "-sha256",
-                                                         "-subj", ("/C=MU"
-                                                                   "/ST=Pamplemousses"
-                                                                   "/L=Piton"
-                                                                   "/O=Redshift"
-                                                                   "/OU=IT"
-                                                                   f"/CN={project['domain']}")
-                ], check=True)
-                Print.eol()
-                Print.success("SSL certificates generated.")
-                Print.eol(2)
-
-
-            Print.info("Generating the nginx configuration file")
             with cd("configuration/nginx"):
-                with open(f"{project['domain']}.conf", "w") as file:
-                    file.write(NGINX_CONFIGURATION)
-            Print.ok()
-            Print.eol(2)
+                with cd("ssl"):
+                    Print.info("Creating the docker openssl image...")
+                    Print.eol(2)
+                    run(["docker", "build", "--tag", "openssl:laravel", "-"], input=OPENSSL_DOCKERFILE, encoding="ascii", check=True)
+                    Print.eol()
+                    Print.success("Created docker openssl image.")
+                    Print.eol(2)
+
+                    Print.info("Generating ssl certificates...")
+                    Print.eol(2)
+                    run(["docker", "run", "--rm",
+                                        "--interactive",
+                                        "--tty",
+                                        "--mount", f"type=bind,source={os.getcwd()},target=/certificates",
+                                        "--user", f"{user['id']}:{group['id']}",
+                                        "laravel-openssl", "req", "-x509",
+                                                            "-newkey",
+                                                            "rsa:4096",
+                                                            "-keyout", ssl["key"],
+                                                            "-out", ssl["certificate"],
+                                                            "-days", "365",
+                                                            "-nodes",
+                                                            "-sha256",
+                                                            "-subj", f"/CN={project['domain']}"
+                    ], check=True)
+                    Print.eol()
+                    Print.success("SSL certificates generated.")
+                    Print.eol(2)
 
 
-            Print.info("Generating the php dockerfile")
-            with cd("dockerfile/php"):
+                with cd("conf"):
+                    Print.info("Generating the nginx configuration file")
+                    with open(f"{project['domain']}.conf", "w") as file:
+                        file.write(NGINX_CONFIGURATION)
+                    Print.ok()
+                    Print.eol(2)
+
+
+            with cd("dockerfiles/php"):
+                Print.info("Generating the php dockerfile")
                 with open("Dockerfile", "w") as file:
                     file.write(PHP_DOCKERFILE)
-            Print.ok()
-            Print.eol(2)
+                Print.ok()
+                Print.eol(2)
 
 
             Print.info("Generating the docker-compose file")
@@ -473,8 +460,7 @@ MAIL_ENCRYPTION={mail['encryption']}\
                                       "--mount", f"type=bind,source={os.getcwd()},target=/app",
                                       "composer", "create-project", "--prefer-dist",
                                                                     "--ignore-platform-reqs",
-                                                                    "laravel/laravel", project["name"]
-                ])
+                                                                    "laravel/laravel", project["name"]])
                 Print.eol()
                 Print.success("Pulled a fresh laravel application.")
                 Print.eol(2)
@@ -504,7 +490,6 @@ MAIL_ENCRYPTION={mail['encryption']}\
                     Print.success("Initialized a git repository for the laravel project.")
                     Print.eol(2)
 
-
             Print.info("Initializing a git repository for the docker configuration...")
             Print.eol(2)
             run(["git", "init"])
@@ -516,9 +501,29 @@ MAIL_ENCRYPTION={mail['encryption']}\
             Print.eol(2)
 
 
-            Print.success("Your project is successfully setup.")
+            """
+            Post Installation
+            """
+
+            Print.info("Building docker-compose containers...")
             Print.eol(2)
-            Print.info(f"Your project will be available at: https://{project['domain']}")
+            run(["docker-compose", "build"])
+            Print.eol(2)
+            Print.success("Built docker-compose containers.")
+            Print.eol(2)
+
+            Print.info("Generating a new application key...")
+            Print.eol(2)
+            run(["docker-compose", "run", "php", "php", "artisan", "key:generate"])
+            run(["docker-compose", "down", "-v"])
+            Print.eol(2)
+            Print.success("Generated a new application key.")
+            Print.eol(2)
+
+
+            Print.success("The project is successfully set up.")
+            Print.eol(2)
+            Print.info(f"The project will be available at: https://{project['domain']}")
             Print.eol(2)
 
     else:
