@@ -436,19 +436,18 @@ module.exports = {
                     Print.info("Generating ssl certificates...")
                     Print.eol(2)
                     run(["docker", "run", "--rm",
-                                        "--interactive",
-                                        "--tty",
-                                        "--mount", f"type=bind,source={os.getcwd()},target=/certificates",
-                                        "--user", f"{user['id']}:{group['id']}",
-                                        "laravel-openssl", "req", "-x509",
-                                                            "-newkey",
-                                                            "rsa:4096",
-                                                            "-keyout", ssl["key"],
-                                                            "-out", ssl["certificate"],
-                                                            "-days", "365",
-                                                            "-nodes",
-                                                            "-sha256",
-                                                            "-subj", f"/CN={project['domain']}"
+                                          "--interactive",
+                                          "--tty",
+                                          "--mount", f"type=bind,source={os.getcwd()},target=/certificates",
+                                          "--user", f"{user['id']}:{group['id']}",
+                                          "openssl:local", "req", "-x509",
+                                                                  "-newkey", "rsa:4096",
+                                                                  "-keyout", ssl["key"],
+                                                                  "-out", ssl["certificate"],
+                                                                  "-days", "365",
+                                                                  "-nodes",
+                                                                  "-sha256",
+                                                                  "-subj", f"/CN={project['domain']}"
                     ], check=True)
                     Print.eol()
                     Print.success("SSL certificates generated.")
