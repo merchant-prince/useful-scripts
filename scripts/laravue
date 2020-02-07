@@ -36,8 +36,11 @@ if __name__ == "__main__":
         project = {
             "name": arguments.name,
             "domain": "laravel.local",
+            "frontend": {
+                "port": 8080
+            },
             "backend": {
-              "domain": None
+                "domain": None
             }
         }
 
@@ -206,7 +209,7 @@ services:
         volumes:
             - ./application/frontend/{project['name'].lower()}:/application
         ports:
-            - "8080:8080"
+            - "{project['frontend']['port']}:8080"
         command: ["yarn", "run", "serve"]
 
     backend:
@@ -613,7 +616,7 @@ module.exports = {
 
             Print.success("Your project is successfully set up.")
             Print.eol(2)
-            Print.info(f"The frontend will be available at: https://localhost")
+            Print.info(f"The frontend will be available at: https://localhost:{project['frontend']['port']}")
             Print.eol()
             Print.info(f"The backend will be available at: https://{project['backend']['domain']}")
             Print.eol(2)
