@@ -15,6 +15,7 @@ from modules.DirectoryStructure import DirectoryStructure
 
 
 
+#TODO: EXCLUDE NODE_MODULES/.CACHE ? FROM THE VOLUMES MOUNT (MOUNT A PERSISTENT NAMED VOLUME AT THAT LOCATION AFTER MOUNTING THE APPLICATION VOLUME)
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="A script to setup a VueJs frontend with a Laravel backend.")
 
