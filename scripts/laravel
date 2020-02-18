@@ -7,6 +7,7 @@ import sys
 import stat
 import argparse
 from subprocess import run
+from urllib.parse import urlparse
 
 from modules.cd import cd
 from modules.Print import Print
@@ -66,12 +67,40 @@ if __name__ == "__main__":
 
 
         """
-        User Inputs
+        Base Checks
         """
 
-        project_domain = input(f"Enter the project domain (default: {project['domain']}): ")
+        Print.eol()
+        Print.info("Checking base project criteria")
 
-        project["domain"] = project_domain if project_domain != '' else project["domain"]
+        if not bool(re.match('^[A-Z][a-z]+(?:[A-Z][a-z]+)*$', project["name"])):
+            Print.fail()
+            Print.eol(2)
+            Print.error("The project name is not PascalCased.")
+            Print.eol(2)
+            sys.exit(1)
+
+        if (os.path.isdir(project["name"]) if project["name"] in os.listdir() else False):
+            Print.fail()
+            Print.eol(2)
+            Print.error("Another project with the same name exists in the current directory.")
+            Print.eol(2)
+            sys.exit(1)
+
+        Print.ok()
+        Print.eol(2)
+
+
+        while True:
+            project_domain = input(f"Enter the project domain (default: {project['domain']}): ")
+
+            if urlparse(f"http://{project_domain}").netloc == project_domain:
+                project["domain"] = project_domain if project_domain != '' else project["domain"]
+                break
+            else:
+                Print.eol(2)
+                Print.error(f"{project_domain} is an invalid domain.")
+                Print.eol(2)
 
         del project_domain
 
@@ -139,11 +168,25 @@ server {{
 }}
 """
 
+        SUPERVISOR_CONFIGURATION = """\
+[supervisord]
+user = root
+nodaemon = true
+logfile = /tmp/supervisord.log
+pidfile = /tmp/supervisord.pid
+
+[program:cron]
+command = cron -f
+
+[program:php]
+command = docker-php-entrypoint php-fpm
+"""
+
         PHP_DOCKERFILE = f"""\
 FROM php:fpm
 
 RUN apt-get update \\
- && apt-get install -y libpq-dev libzip-dev cron zip \\
+ && apt-get install -y sudo supervisor libpq-dev libzip-dev cron zip \\
  && docker-php-ext-configure pgsql \\
  && docker-php-ext-configure zip \\
  && docker-php-ext-install bcmath pdo_pgsql pgsql pcntl zip \\
@@ -152,6 +195,7 @@ RUN apt-get update \\
  && apt autoremove \\
  && rm -rf /var/lib/apt/lists/*
 
+# Setup php.ini file
 RUN mv "${{PHP_INI_DIR}}/php.ini-development" "${{PHP_INI_DIR}}/php.ini"
 
 # Install crontab for laravel scheduler
@@ -185,7 +229,12 @@ RUN userdel -f www-data && \\
           ${{USER_ID}}:${{GROUP_ID}} \\
             /home/www-data
 
+# Setup privileges for www-data to start cron
+RUN echo "www-data ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+
 USER www-data
+
+CMD ["sudo", "/usr/bin/supervisord", "--configuration", "/etc/supervisor/conf.d/supervisord.conf"]
 """
 
         DOCKER_COMPOSE = f"""\
@@ -195,7 +244,7 @@ services:
     nginx:
         image: nginx:latest
         volumes:
-            - ./configuration/nginx/conf/{project['domain']}.conf:/etc/nginx/conf.d/{project['domain']}.conf
+            - ./configuration/nginx/conf/{project['domain']}.conf:/etc/nginx/conf.d/default.conf
             - ./configuration/nginx/ssl:/etc/nginx/ssl
             - ./application/{project['name']}:/var/www/html
         ports:
@@ -204,9 +253,7 @@ services:
         depends_on:
             - php
         networks:
-            nginx:
-                aliases:
-                    - {project['domain']}
+            - nginx
 
     php:
         build:
@@ -216,24 +263,25 @@ services:
                 - GROUP_ID={group['id']}
         volumes:
             - ./application/{project['name']}:/var/www/html
+            - ./configuration/supervisor/supervisord.conf:/etc/supervisor/conf.d/supervisord.conf
         depends_on:
             - postgresql
             - redis
         networks:
             - nginx
-            - database
+            - postgresql
             - redis
 
     postgresql:
         image: postgres:latest
         volumes:
-            - database:/var/lib/postgresql/data
+            - postgresql:/var/lib/postgresql/data
         environment:
             POSTGRES_DB: "{database['name']}"
             POSTGRES_USER: "{database['username']}"
             POSTGRES_PASSWORD: "{database['password']}"
         networks:
-            - database
+            - postgresql
 
     redis:
         image: redis:latest
@@ -244,11 +292,11 @@ services:
 
 networks:
     nginx:
-    database:
+    postgresql:
     redis:
 
 volumes:
-    database:
+    postgresql:
     redis:
 """
 
@@ -263,10 +311,10 @@ from subprocess import run
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Perform common tasks on the laravel-docker stack")
+    parser = argparse.ArgumentParser(description="Perform common tasks on the application stack")
 
-    parser.add_argument("tool", help="Define an action to take on the stack / application", choices=("artisan", "composer", "yarn", "phpunit", "cron"))
-    parser.add_argument("arguments", nargs=argparse.REMAINDER, help="Optional arguments to pass to the specified action")
+    parser.add_argument("tool", help="Define a tool to use on the application stack.", choices=("artisan", "composer", "yarn", "phpunit"))
+    parser.add_argument("arguments", nargs=argparse.REMAINDER, help="Optional arguments to pass to the specified tool.")
 
     parsed = parser.parse_args()
 
@@ -288,12 +336,9 @@ if __name__ == "__main__":
     elif parsed.tool == "phpunit":
         run(["docker-compose", "exec", "php", "php", "./vendor/bin/phpunit"] + parsed.arguments)
 
-    elif parsed.tool == "cron":
-        run(["docker-compose", "exec", "--detach", "--user", "0:0", "php", "cron", "-f"])
-
     else:
         parser.print_help()
-        sys.exit(0)
+        sys.exit(1)
 """
 
         GITIGNORE = """\
@@ -334,34 +379,13 @@ MAIL_HOST={mail['host']}
 MAIL_PORT={mail['port']}
 MAIL_USERNAME={mail['username']}
 MAIL_PASSWORD={mail['password']}
-MAIL_ENCRYPTION={mail['encryption']}\
+MAIL_ENCRYPTION={mail['encryption']}
 """
 
 
         """
         Run
         """
-
-        Print.eol()
-        Print.info("Checking base project criteria")
-
-        if not bool(re.match('^[A-Z][a-z]+(?:[A-Z][a-z]+)*$', project["name"])):
-            Print.fail()
-            Print.eol(2)
-            Print.error("The project name is not PascalCased.")
-            Print.eol(2)
-            sys.exit(1)
-
-        if (os.path.isdir(project["name"]) if project["name"] in os.listdir() else False):
-            Print.fail()
-            Print.eol(2)
-            Print.error("Another project with the same name exists in the current directory.")
-            Print.eol(2)
-            sys.exit(1)
-
-        Print.ok()
-        Print.eol(2)
-
 
         Print.info("Creating the directory structure of the project")
         DirectoryStructure({
@@ -370,7 +394,8 @@ MAIL_ENCRYPTION={mail['encryption']}\
                     "nginx": {
                         "conf": {},
                         "ssl": {}
-                    }
+                    },
+                    "supervisor": {}
                 },
                 "dockerfiles": {
                     "php": {}
@@ -383,40 +408,49 @@ MAIL_ENCRYPTION={mail['encryption']}\
 
 
         with cd(project["name"]):
-            with cd("configuration/nginx"):
-                with cd("ssl"):
-                    Print.info("Creating the docker openssl image...")
-                    Print.eol(2)
-                    run(["docker", "build", "--tag", "openssl:laravel", "-"], input=OPENSSL_DOCKERFILE, encoding="ascii", check=True)
-                    Print.eol()
-                    Print.success("Created docker openssl image.")
-                    Print.eol(2)
+            with cd("configuration"):
+                with cd("nginx"):
+                    with cd("ssl"):
+                        Print.info("Creating the docker openssl image...")
+                        Print.eol(2)
+                        run(["docker", "build", "--tag", "openssl:laravel", "-"], input=OPENSSL_DOCKERFILE, encoding="ascii", check=True)
+                        Print.eol()
+                        Print.success("Created docker openssl image.")
+                        Print.eol(2)
 
-                    Print.info("Generating ssl certificates...")
-                    Print.eol(2)
-                    run(["docker", "run", "--rm",
-                                          "--interactive",
-                                          "--tty",
-                                          "--mount", f"type=bind,source={os.getcwd()},target=/certificates",
-                                          "--user", f"{user['id']}:{group['id']}",
-                                          "openssl:laravel", "req", "-x509",
-                                                             "-newkey", "rsa:4096",
-                                                             "-keyout", ssl["key"],
-                                                             "-out", ssl["certificate"],
-                                                             "-days", "365",
-                                                             "-nodes",
-                                                             "-sha256",
-                                                             "-subj", f"/CN={project['domain']}"
-                    ], check=True)
-                    Print.eol()
-                    Print.success("SSL certificates generated.")
-                    Print.eol(2)
+                        Print.info("Generating ssl certificates...")
+                        Print.eol(2)
+                        run(["docker", "run", "--rm",
+                                              "--interactive",
+                                              "--tty",
+                                              "--mount", f"type=bind,source={os.getcwd()},target=/certificates",
+                                              "--user", f"{user['id']}:{group['id']}",
+                                              "openssl:laravel", "req", "-x509",
+                                                                 "-newkey", "rsa:4096",
+                                                                 "-keyout", ssl["key"],
+                                                                 "-out", ssl["certificate"],
+                                                                 "-days", "365",
+                                                                 "-nodes",
+                                                                 "-sha256",
+                                                                 "-subj", f"/CN={project['domain']}"
+                        ], check=True)
+                        Print.eol()
+                        Print.success("SSL certificates generated.")
+                        Print.eol(2)
 
 
-                with cd("conf"):
-                    Print.info("Generating the nginx configuration file")
-                    with open(f"{project['domain']}.conf", "w") as file:
-                        file.write(NGINX_CONFIGURATION)
+                    with cd("conf"):
+                        Print.info("Generating the nginx configuration file")
+                        with open(f"{project['domain']}.conf", "w") as file:
+                            file.write(NGINX_CONFIGURATION)
+                        Print.ok()
+                        Print.eol(2)
+
+
+                with cd("supervisor"):
+                    Print.info("Generating the supervisor configuration file")
+                    with open("supervisord.conf", "w") as file:
+                        file.write(SUPERVISOR_CONFIGURATION)
                     Print.ok()
                     Print.eol(2)
 
