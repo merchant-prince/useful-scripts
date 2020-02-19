@@ -98,12 +98,12 @@ if __name__ == "__main__":
             if urlparse(f"http://{project_domain}").netloc == project_domain:
                 project["domain"] = project_domain
 
-                Print.eol(2)
+                Print.eol()
 
                 del project_domain
                 break
             else:
-                Print.eol(2)
+                Print.eol()
                 Print.error(f"{project_domain} is an invalid domain.")
                 Print.eol(2)
 
