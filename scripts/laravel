@@ -93,16 +93,18 @@ if __name__ == "__main__":
 
         while True:
             project_domain = input(f"Enter the project domain (default: {project['domain']}): ")
+            project_domain = project["domain"] if project_domain == '' else project_domain
 
             if urlparse(f"http://{project_domain}").netloc == project_domain:
-                project["domain"] = project_domain if project_domain != '' else project["domain"]
+                project["domain"] = project_domain
+
+                del project_domain
                 break
             else:
                 Print.eol(2)
                 Print.error(f"{project_domain} is an invalid domain.")
-                Print.eol(2)
 
-        del project_domain
+            Print.eol(2)
 
 
         """
@@ -198,7 +200,7 @@ RUN apt-get update \\
 # Setup php.ini file
 RUN mv "${{PHP_INI_DIR}}/php.ini-development" "${{PHP_INI_DIR}}/php.ini"
 
-# Install crontab for laravel scheduler
+# Install crontab for the laravel scheduler
 RUN echo "* * * * * www-data php /var/www/html/artisan schedule:run >> /dev/null 2>&1" >> /etc/crontab
 
 # Install composer
