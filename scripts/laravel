@@ -98,13 +98,14 @@ if __name__ == "__main__":
             if urlparse(f"http://{project_domain}").netloc == project_domain:
                 project["domain"] = project_domain
 
+                Print.eol(2)
+
                 del project_domain
                 break
             else:
                 Print.eol(2)
                 Print.error(f"{project_domain} is an invalid domain.")
-
-            Print.eol(2)
+                Print.eol(2)
 
 
         """
@@ -124,6 +125,10 @@ ENTRYPOINT ["openssl"]
 """
 
         NGINX_CONFIGURATION = f"""\
+###############
+# APPLICATION #
+###############
+
 server {{
     listen 80 default_server;
     server_name {project['domain']};
@@ -166,6 +171,20 @@ server {{
 
     location ~ /\.(?!well-known).* {{
         deny all;
+    }}
+}}
+
+
+###########
+# ADMINER #
+###########
+
+server {{
+    listen 8080;
+    server_name {project['domain']};
+
+    location / {{
+        proxy_pass http://adminer:8080;
     }}
 }}
 """
@@ -252,6 +271,7 @@ services:
         ports:
             - "80:80"
             - "443:443"
+            - "8080:8080"
         depends_on:
             - php
         networks:
@@ -284,6 +304,7 @@ services:
             POSTGRES_PASSWORD: "{database['password']}"
         networks:
             - postgresql
+            - adminer
 
     redis:
         image: redis:latest
@@ -292,10 +313,17 @@ services:
         networks:
             - redis
 
+    adminer:
+        image: adminer:latest
+        networks:
+            - adminer
+            - nginx
+
 networks:
     nginx:
     postgresql:
     redis:
+    adminer:
 
 volumes:
     postgresql:
@@ -561,7 +589,9 @@ MAIL_ENCRYPTION={mail['encryption']}
 
             Print.success("The project is successfully set up.")
             Print.eol(2)
-            Print.info(f"The project will be available at: https://{project['domain']}")
+            Print.info(f"The application will be available at: https://{project['domain']}")
+            Print.eol(2)
+            Print.info(f"Adminer will be available at: http://{project['domain']}:8080")
             Print.eol(2)
 
     else:
