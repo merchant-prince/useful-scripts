@@ -17,16 +17,26 @@ from modules.DirectoryStructure import DirectoryStructure
 
 
 if __name__ == "__main__":
+
+    # Constants
+    SETUP_ACTION = "setup"
+    DEFAULT_PROJECT_DOMAIN = "laravel.local"
+
+    # Argument parsing
     parser = argparse.ArgumentParser(description="A script to setup a Laravel application.")
 
-    subparsers = parser.add_subparsers(dest="actions")
-    new_command = subparsers.add_parser("setup", help="Install a new laravel application in the current directory.")
+    subparsers = parser.add_subparsers(dest="action")
 
-    new_command.add_argument("name", help="The project name (should be PascalCased).")
+    setup_action = subparsers.add_parser(SETUP_ACTION, help="Install a new laravel application in the current directory.")
+
+    setup_action.add_argument("name", help="The project name (should be PascalCased).")
+    setup_action.add_argument("--domain", default=DEFAULT_PROJECT_DOMAIN, help=f"The project domain (default: {DEFAULT_PROJECT_DOMAIN}).")
+    setup_action.add_argument("--dev", action="store_true", default=False, help="Install the development version of laravel.")
 
     arguments = parser.parse_args()
 
-    if arguments.actions == "setup":
+
+    if arguments.action == SETUP_ACTION:
 
         """
         Variables
@@ -34,7 +44,10 @@ if __name__ == "__main__":
 
         project = {
             "name": arguments.name,
-            "domain": "laravel.local"
+            "domain": arguments.domain,
+            "laravel": {
+                "dev": arguments.dev
+            }
         }
 
         user = {
@@ -87,25 +100,15 @@ if __name__ == "__main__":
             Print.eol(2)
             sys.exit(1)
 
+        if project["domain"] != DEFAULT_PROJECT_DOMAIN:
+            if urlparse(f"http://{project['domain']}").netloc != project["domain"]:
+                Print.eol()
+                Print.error(f"{project['domain']} is an invalid domain.")
+                Print.eol(2)
+                sys.exit(1)
+
         Print.ok()
         Print.eol(2)
-
-
-        while True:
-            project_domain = input(f"Enter the project domain (default: {project['domain']}): ")
-            project_domain = project["domain"] if project_domain == '' else project_domain
-
-            if urlparse(f"http://{project_domain}").netloc == project_domain:
-                project["domain"] = project_domain
-
-                Print.eol()
-
-                del project_domain
-                break
-            else:
-                Print.eol()
-                Print.error(f"{project_domain} is an invalid domain.")
-                Print.eol(2)
 
 
         """
@@ -527,7 +530,8 @@ MAIL_ENCRYPTION={mail['encryption']}
                                       "--mount", f"type=bind,source={os.getcwd()},target=/app",
                                       "composer", "create-project", "--prefer-dist",
                                                                     "--ignore-platform-reqs",
-                                                                    "laravel/laravel", project["name"]])
+                                                                    "laravel/laravel", project["name"],
+                                                                                       "dev-develop" if project["laravel"]["dev"] else ""])
                 Print.eol()
                 Print.success("Pulled a fresh laravel application.")
                 Print.eol(2)
