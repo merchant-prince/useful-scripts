@@ -205,9 +205,21 @@ loglevel = debug
 
 [program:cron]
 command = cron -f
+autostart = true
+autorestart = true
 
 [program:php]
 command = docker-php-entrypoint php-fpm
+autostart = true
+autorestart = true
+
+# [program:horizon]
+# user = www-data
+# process_name = %(program_name)s
+# command = php /var/www/html/artisan horizon
+# autostart = true
+# autorestart = true
+# stopwaitsecs = 3600
 """
 
         PHP_DOCKERFILE = f"""\
