@@ -282,7 +282,10 @@ services:
         depends_on:
             - php
         networks:
-            - nginx
+            nginx:
+#             chromedriver:
+#                 aliases:
+#                     - laravel.local
 
     php:
         build:
@@ -300,6 +303,7 @@ services:
             - nginx
             - postgresql
             - redis
+#             - chromedriver
 
     postgresql:
         image: postgres:latest
@@ -326,11 +330,26 @@ services:
             - adminer
             - nginx
 
+#     chromedriver:
+#         image: robcherry/docker-chromedriver
+#         depends_on:
+#             - nginx
+#         environment:
+#             CHROMEDRIVER_WHITELISTED_IPS: ""
+#             CHROMEDRIVER_PORT: "9515"
+#         ports:
+#             - "9515:9515"
+#         networks:
+#             - chromedriver
+#         cap_add:
+#             - "SYS_ADMIN"
+
 networks:
     nginx:
     postgresql:
     redis:
     adminer:
+#     chromedriver:
 
 volumes:
     postgresql:
