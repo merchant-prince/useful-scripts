@@ -70,12 +70,15 @@ if __name__ == "__main__":
         }
 
         mail = {
-            "driver": "smtp",
+            "mailer": "smtp",
             "host": "smtp.mailtrap.io",
             "port": 2525,
             "username": "558119fcb320fa",
             "password": "9e0ea8073accb9",
-            "encryption": "null"
+            "encryption": "null",
+            "from": {
+                "address": f"{project['name'].lower()}@{project['domain']}"
+            }
         }
 
 
@@ -397,23 +400,37 @@ DB_DATABASE={database['name']}
 DB_USERNAME={database['username']}
 DB_PASSWORD={database['password']}
 
+BROADCAST_DRIVER=log
+CACHE_DRIVER=redis
+QUEUE_CONNECTION=redis
+SESSION_DRIVER=redis
+SESSION_LIFETIME=120
+
 REDIS_HOST=redis
+REDIS_PASSWORD=null
 REDIS_PORT=6379
 
-BROADCAST_DRIVER=log
-
-CACHE_DRIVER=redis
-
-QUEUE_CONNECTION=redis
-
-SESSION_DRIVER=redis
-
-MAIL_DRIVER={mail['driver']}
+MAIL_MAILER={mail['mailer']}
 MAIL_HOST={mail['host']}
 MAIL_PORT={mail['port']}
 MAIL_USERNAME={mail['username']}
 MAIL_PASSWORD={mail['password']}
 MAIL_ENCRYPTION={mail['encryption']}
+MAIL_FROM_ADDRESS={mail['from']['address']}
+MAIL_FROM_NAME="${{APP_NAME}}"
+
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+AWS_DEFAULT_REGION=us-east-1
+AWS_BUCKET=
+
+PUSHER_APP_ID=
+PUSHER_APP_KEY=
+PUSHER_APP_SECRET=
+PUSHER_APP_CLUSTER=mt1
+
+MIX_PUSHER_APP_KEY="${{PUSHER_APP_KEY}}"
+MIX_PUSHER_APP_CLUSTER="${{PUSHER_APP_CLUSTER}}"
 """
 
 
