@@ -137,6 +137,7 @@ if __name__ == "__main__":
     pass_ = Pass(arguments.filepath)
 
     if arguments.action == "import":
+        Print.eol()
         Print.info(f"Importing passwords from: {arguments.filepath}")
         Print.eol(2)
 
@@ -147,6 +148,7 @@ if __name__ == "__main__":
         Print.eol(2)
 
     elif arguments.action == "export":
+        Print.eol()
         Print.info(f"Exporting passwords to: {arguments.filepath}")
 
         pass_.exportPasswords()
