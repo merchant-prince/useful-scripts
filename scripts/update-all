@@ -15,6 +15,7 @@ if __name__ == "__main__":
     arguments = parser.parse_args()
 
     if arguments.refresh:
+        Print.eol()
         Print.info("Refreshing the pacman mirrors.")
         Print.eol(2)
 
@@ -22,9 +23,10 @@ if __name__ == "__main__":
 
         Print.eol(2)
         Print.success("Refreshed the pacman mirrors.")
-        Print.eol(2)
+        Print.eol()
 
 
+    Print.eol()
     Print.info("Upgrading pacman's packages.")
     Print.eol(2)
 
@@ -43,3 +45,4 @@ if __name__ == "__main__":
     Print.eol(2)
     Print.success("Upgraded AUR's packages.")
     Print.eol(2)
+
