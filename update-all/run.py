@@ -1,48 +1,26 @@
-#! /usr/bin/env python3
-
+#! /home/harivansh/.scripts.d/update-all/.env/bin/python3
 
 import argparse
 from subprocess import run
-
-from modules.Print import Print
-
+# noinspection PyUnresolvedReferences
+from harivansh_scripting_utilities.print import success, info, error
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="A script to update the system.")
-
-    parser.add_argument("--refresh", action="store_true", help="Refresh the pacman mirrors.")
-
+    parser = argparse.ArgumentParser("update-all", description="A script to update the system packages.")
     arguments = parser.parse_args()
 
-    if arguments.refresh:
-        Print.eol()
-        Print.info("Refreshing the pacman mirrors.")
-        Print.eol(2)
+    try:
+        print(f"""\n{info("Refreshing pacman mirrors...")}\n""", end="")
+        run(["sudo", "pacman-mirrors", "-f"], check=True)
+        print(f"""\n{success("Pacman mirrors have been refreshed.")}\n""", end="")
 
-        run(["sudo", "pacman-mirrors", "-f"])
+        print(f"""\n{info("Upgrading pacman packages...")}\n""", end="")
+        run(["sudo", "pacman", "-Syyu"], check=True)
+        print(f"""\n{success("Pacman packages have been upgraded.")}\n""", end="")
 
-        Print.eol(2)
-        Print.success("Refreshed the pacman mirrors.")
-        Print.eol()
+        print(f"""\n{info("Upgrading Arch User Repository (AUR) packages...")}\n""", end="")
+        run(["yaourt", "-Syuua"], check=True)
+        print(f"""\n{success("Pacman packages have been upgraded.")}\n""", end="")
 
-
-    Print.eol()
-    Print.info("Upgrading pacman's packages.")
-    Print.eol(2)
-
-    run(["sudo", "pacman", "-Syyu"])
-
-    Print.eol(2)
-    Print.success("Upgraded pacman's packages.")
-    Print.eol(2)
-
-
-    Print.info("Upgrading AUR's packages.")
-    Print.eol(2)
-
-    run(["yaourt", "-Syuua"])
-
-    Print.eol(2)
-    Print.success("Upgraded AUR's packages.")
-    Print.eol(2)
-
+    except Exception as exception:
+        print(f"""\n{error(exception)}\n""", end="")
