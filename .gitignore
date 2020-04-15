@@ -1,0 +1,4 @@
+.idea/
+
+laravel/.env/
+laravel/__pycache__/
