@@ -5,3 +5,6 @@ laravel/__pycache__/
 
 update-all/.env/
 update-all/__pycache__/
+
+docker-utils/.env/
+docker-utils/__pycache__/

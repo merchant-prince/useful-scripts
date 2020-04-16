@@ -6,8 +6,7 @@ from subprocess import run
 
 if __name__ == "__main__":
     root_dir = os.path.abspath(os.path.dirname(__file__))
-    env_dirname = ".env"
-    env_path = f"{root_dir}/{env_dirname}"
+    env_path = f"{root_dir}/.env"
 
     if os.path.isdir(env_path):
         shutil.rmtree(env_path)
