@@ -27,8 +27,7 @@ if __name__ == "__main__":
 
         dependencies = [
             ["--upgrade", "pip"],
-            ["harivansh-scripting-utilities"],
-            ["docker"]
+            ["harivansh-scripting-utilities"]
         ]
 
         for dependency in dependencies:
@@ -37,13 +36,13 @@ if __name__ == "__main__":
     env_python3 = f"{env_path}/bin/python3"
 
     if arguments.action == "ui":
-        run([env_python3, f"{root_path}/ui.py"], check=True)
+        run([env_python3, f"{root_path}/src/ui.py"])
 
     elif arguments.action == "status":
-        run([env_python3, f"{root_path}/status.py"], check=True)
+        run([env_python3, f"{root_path}/src/status.py"], check=True)
 
     elif arguments.action == "purge":
-        run([env_python3, f"{root_path}/purge.py"], check=True)
+        run([env_python3, f"{root_path}/src/purge.py"], check=True)
 
     else:
         parser.print_help()
