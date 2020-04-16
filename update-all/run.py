@@ -1,26 +1,27 @@
-#! /home/harivansh/.scripts.d/update-all/.env/bin/python3
+#! /usr/bin/env python3
 
-import argparse
+import os
+import shutil
 from subprocess import run
-# noinspection PyUnresolvedReferences
-from harivansh_scripting_utilities.print import success, info, error
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser("update-all", description="A script to update the system packages.")
-    arguments = parser.parse_args()
+    root_dir = os.path.abspath(os.path.dirname(__file__))
+    env_dirname = ".env"
+    env_path = f"{root_dir}/{env_dirname}"
 
-    try:
-        print(f"""\n{info("Refreshing pacman mirrors...")}\n""", end="")
-        run(["sudo", "pacman-mirrors", "-f"], check=True)
-        print(f"""\n{success("Pacman mirrors have been refreshed.")}\n""", end="")
+    if os.path.isdir(env_path):
+        shutil.rmtree(env_path)
 
-        print(f"""\n{info("Upgrading pacman packages...")}\n""", end="")
-        run(["sudo", "pacman", "-Syyu"], check=True)
-        print(f"""\n{success("Pacman packages have been upgraded.")}\n""", end="")
+    run(["python3", "-m", "venv", env_path], check=True)
 
-        print(f"""\n{info("Upgrading Arch User Repository (AUR) packages...")}\n""", end="")
-        run(["yaourt", "-Syuua"], check=True)
-        print(f"""\n{success("Pacman packages have been upgraded.")}\n""", end="")
+    dependencies = [
+        ["--upgrade", "pip"],
+        ["harivansh-scripting-utilities"]
+    ]
 
-    except Exception as exception:
-        print(f"""\n{error(exception)}\n""", end="")
+    for dependency in dependencies:
+        run([f"{env_path}/bin/pip3", "install", *dependency], check=True)
+
+    run([f"{env_path}/bin/python3", f"{root_dir}/update-all.py"], check=True)
+
+    shutil.rmtree(env_path)
