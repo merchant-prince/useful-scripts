@@ -1,24 +1,26 @@
 #! /usr/bin/env python3
 
 import os
-import sys
-import argparse
+import shutil
 from subprocess import run
 
 if __name__ == "__main__":
-    SETUP = "setup"
+    env_dirname = ".env"
+    env_path = f"{os.path.abspath(os.path.dirname(__file__))}/{env_dirname}"
 
-    parser = argparse.ArgumentParser("laravel", description="Setup a new Laravel application.")
-    parser.add_argument("action", choices=(SETUP,), help="Actions to take on the script.")
-    arguments = parser.parse_args()
+    if os.path.isdir(env_path):
+        shutil.rmtree(env_path)
 
-    env_dir = f"{os.path.abspath(os.path.dirname(__file__))}/.env"
+    run(["python3", "-m", "venv", env_path], check=True)
 
-    # Setup a new laravel project
-    if arguments.action == SETUP:
-        env_python3 = f"{env_dir}/bin/python3"
+    dependencies = [
+        ["--upgrade", "pip"],
+        ["harivansh-laravel-docker"]
+    ]
 
-        run([env_python3, "-m", "harivansh_laravel_docker"], check=True)
-    else:
-        parser.print_help()
-        sys.exit(1)
+    for dependency in dependencies:
+        run([f"{env_path}/bin/pip3", "install", *dependency], check=True)
+
+    run([f"{env_path}/bin/python3", "-m", "harivansh_laravel_docker"], check=True)
+
+    shutil.rmtree(env_path)
