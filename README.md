@@ -1,5 +1,7 @@
 # Useful Scripts
 
+![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/merchant-prince/useful-scripts?sort=semver&style=flat-square)
+
 This repository contains scripts to automate some frequent tasks.
 
 ## Scripts
