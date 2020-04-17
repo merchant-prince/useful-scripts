@@ -32,12 +32,15 @@ if __name__ == "__main__":
     # Clean the rootspace using Bleachbit
     run([env_python3, f"{root_path}/src/bleachbit.py", "root"])
 
-    # Clean pacman & yaourt
-
     # Clean docker
+
+    # Clean pacman & yaourt
+    run([env_python3, f"{root_path}/src/pacman.py"])
+
+    # Clean system
 
     # Clean Jetbrains applications
     if arguments.jetbrains:
         pass
 
-    # Clean the user's home directory (incl. .scripts.d)
+    # Clean the user's home directory (incl. .scripts.d?)

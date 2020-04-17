@@ -4,7 +4,7 @@ from harivansh_scripting_utilities.print import success, info, error
 
 try:
     print(f"""\n{info("Refreshing pacman mirrors...")}\n""", end="")
-    run(["sudo", "pacman-mirrors", "-f"], check=True)
+    run(["sudo", "pacman-mirrors", "-fg"], check=True)
     print(f"""\n{success("Pacman mirrors have been refreshed.")}\n""", end="")
 
     print(f"""\n{info("Upgrading pacman packages...")}\n""", end="")
