@@ -2,7 +2,6 @@
 
 import os
 import sys
-import shutil
 import argparse
 from subprocess import run
 
@@ -24,9 +23,7 @@ if __name__ == "__main__":
     root_path = os.path.abspath(os.path.dirname(__file__))
     env_path = f"{root_path}/.env"
 
-    if os.path.isdir(env_path):
-        shutil.rmtree(env_path)
-
+    # setup venv
     if not os.path.isdir(env_path):
         run(["python3", "-m", "venv", env_path], check=True)
 
@@ -53,5 +50,3 @@ if __name__ == "__main__":
     else:
         parser.print_help()
         sys.exit(1)
-
-    shutil.rmtree(env_path)

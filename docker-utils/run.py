@@ -2,8 +2,6 @@
 
 import os
 import sys
-import time
-import shutil
 import argparse
 from subprocess import run
 
@@ -17,11 +15,8 @@ if __name__ == "__main__":
 
     root_path = os.path.abspath(os.path.dirname(__file__))
     env_path = f"{root_path}/.env"
-    MAX_CACHE_SECONDS = 15 * 60
 
-    if os.path.isdir(env_path) and (time.time() - os.path.getatime(env_path) > MAX_CACHE_SECONDS):
-        shutil.rmtree(env_path)
-
+    # setup venv
     if not os.path.isdir(env_path):
         run(["python3", "-m", "venv", env_path], check=True)
 

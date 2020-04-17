@@ -1,6 +1,6 @@
 # Useful Scripts
 
-This repository contains some scripts to automate some frequent tasks.
+This repository contains scripts to automate some frequent tasks.
 
 ## Scripts
 
@@ -11,6 +11,8 @@ The following scripts are available:
 This script pulls a [Laravel](https://laravel.com) project in the current working directory, and sets up the environment
 needed to run the project. [Docker](https://www.docker.com) is used as the containerization solution for the various
 services of the generated project.
+
+@todo: add
 
 ### Docker Utils
 
