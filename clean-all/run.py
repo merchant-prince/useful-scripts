@@ -24,11 +24,17 @@ if __name__ == "__main__":
         for dependency in dependencies:
             run([f"{env_path}/bin/pip3", "install", *dependency], check=True)
 
+    env_python3 = f"{env_path}/bin/python3"
+
     # Clean the userspace using Bleachbit
+    run([env_python3, f"{root_path}/src/bleachbit.py", "user"])
 
     # Clean the rootspace using Bleachbit
+    run([env_python3, f"{root_path}/src/bleachbit.py", "root"])
 
     # Clean pacman & yaourt
+
+    # Clean docker
 
     # Clean Jetbrains applications
     if arguments.jetbrains:
