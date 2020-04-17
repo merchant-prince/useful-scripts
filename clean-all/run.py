@@ -33,9 +33,11 @@ if __name__ == "__main__":
     run([env_python3, f"{root_path}/src/bleachbit.py", "root"])
 
     # Clean docker
+    run([f"{os.path.dirname(root_path)}/docker-utils/run.py", "purge"])
 
     # Clean pacman & yaourt
     run([env_python3, f"{root_path}/src/pacman.py"])
+    run([env_python3, f"{root_path}/src/yaourt.py"])
 
     # Clean system
 
