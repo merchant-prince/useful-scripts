@@ -7,7 +7,7 @@ from subprocess import run
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("docker-utils",
-                                     description="A script to view, manipulate, or purge Docker entities.")
+                                     description="View, manipulate, or purge Docker entities.")
     parser.add_argument("action",
                         choices=("ui", "status", "purge"),
                         help="The action to be carried out by the script.")
