@@ -1,9 +1,6 @@
-import sys
 from subprocess import run, PIPE
 # noinspection PyUnresolvedReferences
 from harivansh_scripting_utilities.print import success, warning, error
-
-entity = sys.argv[1]
 
 print(f"\n{warning('** Cleaning the userspace using Bleachbit **')}\n", end="")
 
@@ -13,12 +10,7 @@ try:
                 run(["bleachbit", "--list-cleaners"], stdout=PIPE, check=True).stdout.decode("utf-8").split()
                 if cleaner not in excluded_cleaners)
 
-    command = ["bleachbit", "--clean", *cleaners]
-
-    if entity == "root":
-        command.insert(0, "sudo")
-
-    run(command, check=True)
+    run(["bleachbit", "--clean", *cleaners], check=True)
 
 except Exception as exception:
     print(f"\n{error(exception)}\n", end="")

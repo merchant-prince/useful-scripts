@@ -27,10 +27,7 @@ if __name__ == "__main__":
     env_python3 = f"{env_path}/bin/python3"
 
     # Clean the userspace using Bleachbit
-    run([env_python3, f"{root_path}/src/bleachbit.py", "user"])
-
-    # Clean the rootspace using Bleachbit
-    run([env_python3, f"{root_path}/src/bleachbit.py", "root"])
+    run([env_python3, f"{root_path}/src/bleachbit.py"])
 
     # Clean docker
     run([f"{os.path.dirname(root_path)}/docker-utils/run.py", "purge"])
@@ -39,7 +36,8 @@ if __name__ == "__main__":
     run([env_python3, f"{root_path}/src/pacman.py"])
     run([env_python3, f"{root_path}/src/yaourt.py"])
 
-    # Clean system
+    # Clean the system
+    run([env_python3, f"{root_path}/src/system.py"])
 
     # Clean Jetbrains applications
     if arguments.jetbrains:
