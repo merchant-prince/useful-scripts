@@ -42,5 +42,3 @@ if __name__ == "__main__":
     # Clean Jetbrains applications
     if arguments.jetbrains:
         run([env_python3, f"{root_path}/src/jetbrains.py"])
-
-    # Clean the user's home directory (incl. .scripts.d?)
