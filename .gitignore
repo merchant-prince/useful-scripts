@@ -5,3 +5,4 @@ update-all/.env/
 pass-utils/.env/
 docker-utils/.env/
 clean-all/.env/
+backup-all/.env/
