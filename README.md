@@ -17,18 +17,8 @@ project.
 
 #### Usage
 
-To create a new laravel project, call the **run.py** script.
-
 ```sh
-./laravel/run.py
-```
-
-#### Clean
-
-If the dependencies of the project have been updated, remove the **.env** directory.
-
-```sh
-rm -rf ./laravel/.env
+./laravel/run.py    # setup a new laravel project.
 ```
 
 ### Docker Utils
@@ -46,14 +36,6 @@ machine.
 ./docker-utils/run.py ui      # start a portainer application at http://localhost:9000.
 ```
 
-#### Clean
-
-If the dependencies of the project have been updated, remove the **.env** directory.
-
-```sh
-rm -rf ./docker-utils/.env
-```
-
 ### Pass Utils
 
 This script allows you to import or export passwords present on ```pass```.
@@ -66,30 +48,32 @@ This script allows you to import or export passwords present on ```pass```.
 ./pass-utils/run.py export passwords.txt  # export passwords to a new passwords file named passwords.txt.
 ```
 
-#### Clean
-
-If the dependencies of the project have been updated, remove the **.env** directory.
-
-```sh
-rm -rf ./pass-utils/.env
-```
-
 ### Update All
 
 This script updates the entire system.
 
 #### Usage
 
-To update the system, run the following command:
-
 ```sh
-./update-all/run.py
+./update-all/run.py # update the system.
 ```
 
-#### Clean
+### Clean All
 
-If the dependencies of the project have been updated, remove the **.env** directory.
+This script cleans the system.
+
+#### Usage
 
 ```sh
-rm -rf ./update-all/.env
+./clean-all/run.py              # clean the system.
+./clean-all/run.py --jetbrains  # clean the system AND jetbrains applications.
+```
+
+## Updating dependencies
+
+If the dependencies of the project have been updated, remove the **.env** directories from the script directories.
+They will be recreated the next time the scripts are run.
+
+```sh
+rm -rf ./*/.env
 ```
