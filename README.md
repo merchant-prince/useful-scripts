@@ -69,6 +69,16 @@ This script cleans the system.
 ./clean-all/run.py --jetbrains  # clean the system AND jetbrains applications.
 ```
 
+### Backup All
+
+This script backs up several files and directories.
+
+#### Usage
+
+```sh
+./backup-all/run.py .   # backup the files, and save the archive in the current directory.
+```
+
 ## Updating dependencies
 
 If the dependencies of the project have been updated, remove the **.env** directories from the script directories.
