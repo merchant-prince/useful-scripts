@@ -6,7 +6,7 @@ from subprocess import run
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("clean-all", description="Clean the system.")
-    parser.add_argument("--jetbrains", action="store_true")
+    parser.add_argument("--jetbrains", action="store_true", help="Remove Jetbrains applications' configuration files.")
     arguments = parser.parse_args()
 
     root_path = os.path.abspath(os.path.dirname(__file__))
@@ -41,6 +41,6 @@ if __name__ == "__main__":
 
     # Clean Jetbrains applications
     if arguments.jetbrains:
-        pass
+        run([env_python3, f"{root_path}/src/jetbrains.py"])
 
     # Clean the user's home directory (incl. .scripts.d?)
