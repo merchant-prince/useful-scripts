@@ -48,14 +48,14 @@ This script allows you to import or export passwords present on ```pass```.
 ./pass-utils/run.py export passwords.txt  # export passwords to a new passwords file named passwords.txt.
 ```
 
-### Update All
+### Upgrade All
 
-This script updates the entire system.
+This script upgrades the entire system.
 
 #### Usage
 
 ```sh
-./update-all/run.py # update the system.
+./upgrade-all/run.py # upgrade the system.
 ```
 
 ### Clean All
