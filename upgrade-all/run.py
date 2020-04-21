@@ -19,4 +19,4 @@ if __name__ == "__main__":
         for dependency in dependencies:
             run([f"{env_path}/bin/pip3", "install", *dependency], check=True)
 
-    run([f"{env_path}/bin/python3", f"{root_path}/src/update-all.py"], check=True)
+    run([f"{env_path}/bin/python3", f"{root_path}/src/core.py"], check=True)
