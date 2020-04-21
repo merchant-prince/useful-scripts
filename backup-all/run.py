@@ -26,4 +26,4 @@ if __name__ == "__main__":
 
     env_python3 = f"{env_path}/bin/python3"
 
-    run([env_python3, f"{root_path}/src/backup-all.py", arguments.destination], check=True)
+    run([env_python3, f"{root_path}/src/core.py", arguments.destination], check=True)
